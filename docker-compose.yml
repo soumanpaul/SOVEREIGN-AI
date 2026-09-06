@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sovereignforge}
+      POSTGRES_USER: ${POSTGRES_USER:-sovereignforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sovereignforge_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [data_net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 256m
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.4
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks: [data_net]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/6333"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 384m
+
+  api-worker:
+    build:
+      context: ./backend
+    env_file: ${ENV_FILE:-.env.example}
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sovereignforge}:${POSTGRES_PASSWORD:-sovereignforge_dev}@postgres:5432/${POSTGRES_DB:-sovereignforge}
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    ports:
+      - "8000:8000"
+    networks: [app_net, data_net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    mem_limit: 512m
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "3000:3000"
+    networks: [app_net]
+    depends_on: [api-worker]
+    mem_limit: 256m
+
+networks:
+  app_net:
+  data_net:
+    internal: true
+
+volumes:
+  postgres_data:
+  qdrant_data:
