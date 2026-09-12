@@ -21,7 +21,7 @@ export function Trace({ selected, setSelected }: { selected: string; setSelected
 export function Security({ readiness }: { readiness?: Readiness }) {
   const dependencies = Object.entries(readiness?.details.dependencies ?? {});
   const controls = [
-    [Network, "External AI", "NOT CONFIGURED", "Frontend uses the configured SovereignForge API"],
+    [Network, "External AI", "NOT CONFIGURED", "Frontend uses the configured SOVEREIGN AI API"],
     [Cpu, "Model inference", "LOCAL", "Ollama provider through the backend"],
     [Database, "Knowledge index", "LOCAL", "Embeddings and vectors reported by readiness"],
     [HardDrive, "Document storage", "LOCAL", "Workspace file service"],
@@ -30,7 +30,7 @@ export function Security({ readiness }: { readiness?: Readiness }) {
   ] as const;
   return <>
     <Title eyebrow="ZERO-EGRESS ASSURANCE" title="Sovereignty Monitor" copy="Live evidence from the current readiness API, separated from controls that require operating-system verification." action={<button className="primary" disabled title="Egress-test API is not available"><TerminalSquare size={15} /> Run egress test</button>} />
-    <section className="sovereign"><div className="orbit"><ShieldCheck size={43} /></div><div><Badge tone={readiness?.status === "ok" ? "green" : "amber"}><i className="dot" /> API {readiness?.status?.toUpperCase() ?? "CHECKING"}</Badge><h2>{readiness?.status === "ok" ? "Local services ready" : "Checking data boundary"}</h2><p>Observed from {readiness?.service ?? "SovereignForge backend"}</p></div><div><span>READY DEPENDENCIES</span><b>{dependencies.filter(([, state]) => state.status === "ready").length}</b><small>of {dependencies.length} reported services</small></div></section>
+    <section className="sovereign"><div className="orbit"><ShieldCheck size={43} /></div><div><Badge tone={readiness?.status === "ok" ? "green" : "amber"}><i className="dot" /> API {readiness?.status?.toUpperCase() ?? "CHECKING"}</Badge><h2>{readiness?.status === "ok" ? "Local services ready" : "Checking data boundary"}</h2><p>Observed from {readiness?.service ?? "SOVEREIGN AI backend"}</p></div><div><span>READY DEPENDENCIES</span><b>{dependencies.filter(([, state]) => state.status === "ready").length}</b><small>of {dependencies.length} reported services</small></div></section>
     <div className="security-grid">{controls.map(([Icon, label, value, copy]) => <article className="panel control" key={label}><i><Icon size={19} /></i><div><small>{label}</small><h3>{value}</h3><p>{copy}</p></div><CheckCircle2 size={18} /></article>)}</div>
     <div className="proof"><section className="panel"><Head n="READINESS" label="LIVE" title="Dependency verification" action={<Badge tone={readiness?.status === "ok" ? "green" : "amber"}>API DATA</Badge>} /><div className="terminal">{dependencies.map(([name, state]) => <p key={name}><span>$</span> {name} <em>{state.status}{state.latency_ms == null ? "" : ` · ${state.latency_ms} ms`}</em></p>)}{!dependencies.length && <em>Waiting for backend readiness response…</em>}<b>Network isolation itself is not asserted without a dedicated verification endpoint.</b></div></section><section className="panel policies"><Head n="CURRENT" label="COVERAGE" title="Integrated safeguards" />{["Configured API boundary", "Local model registry", "Workspace file service", "MIME and file-size validation", "Knowledge ingestion jobs", "Model health observations"].map((item) => <div key={item}><Check size={13} /><span>{item}</span><Badge tone="green">ACTIVE</Badge></div>)}</section></div>
   </>;

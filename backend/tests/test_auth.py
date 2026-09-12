@@ -37,14 +37,14 @@ async def test_local_signup_session_signin_and_signout() -> None:
             signup = await client.post(
                 "/api/v1/auth/signup",
                 json={
-                    "organization_name": "SovereignForge Demo",
+                    "organization_name": "SOVEREIGN AI Demo",
                     "full_name": "Demo Administrator",
                     "email": DEMO_EMAIL,
                     "password": DEMO_PASSWORD,
                 },
             )
             assert signup.status_code == 201
-            assert signup.json()["organization"]["name"] == "SovereignForge Demo"
+            assert signup.json()["organization"]["name"] == "SOVEREIGN AI Demo"
             assert "HttpOnly" in signup.headers["set-cookie"]
 
             current = await client.get("/api/v1/auth/me")

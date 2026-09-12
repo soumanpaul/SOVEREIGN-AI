@@ -1,1 +1,1 @@
-"""SovereignForge application package."""
+"""SOVEREIGN AI application package."""
