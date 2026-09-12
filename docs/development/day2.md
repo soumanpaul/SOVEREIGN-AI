@@ -1,7 +1,6 @@
  Day 2 is complete and running at http://localhost:3000/knowledge (http://localhost:3000/knowledge).
 
-  Implemented:
-
+#  Implemented:
   - Secure streamed document uploads with validation and 20 MB limit
   - PDF extraction with page-level Tesseract OCR fallback
   - Markdown, text, CSV, PNG, and JPEG support
@@ -13,8 +12,7 @@
   - Responsive Knowledge Library UI
   - PostgreSQL Day 2 migration and persistent document storage
 
-  Verification passed:
-
+# Verification passed:
   - All six Turborepo checks
   - 6 backend tests
   - Ruff, strict mypy, ESLint, TypeScript, and Vitest
@@ -24,8 +22,7 @@
   - Semantic retrieval returned the correct pump isolation procedure with citation
   - Playwright UI workflow passed with zero console errors
 
-  Key references:
-
+#  Key references:
   - Day 2 build record (docs/17-day-2-build-record.md)
   - Knowledge UI (frontend/app/knowledge/page.tsx)
   - Knowledge API (backend/app/api/routes/knowledge.py)
@@ -36,9 +33,8 @@
   The complete stack is left running. Day 3 is ready to begin with durable task execution, capability routing, trace events,
   and the first governed agent loop using search_knowledge.
 
-─ Worked for 19m 16s ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-─ Conversation recap ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+─ Worked for 19m 16s 
+─ Conversation recap 
 
   Day 2 is complete and running at http://localhost:3000/knowledge, with secure streamed uploads, validation, PDF OCR
   fallback, multiple file formats, and deterministic page-aware chunking. No next step or blocker was recorded.
