@@ -5,11 +5,14 @@
   Do not begin with RAG, agents, OCR, or sandboxing simultaneously. First establish a clean foundation that every later
   feature can reuse.
 
+  - OCR
+    - AI-powered OCR (Optical Character Recognition) transforms static images and scanned documents into structured, machine-readable data by combining traditional text recognition with artificial intelligence and machine learning
+    
+
   ## Phase 1: Day 1 foundation
 
   ### 1. Confirm prerequisites
-
-  The development machine needs:
+  - The development machine needs:
 
   - Docker with Compose
   - Node.js and npm
@@ -22,7 +25,6 @@
   heavily on this.
 
   ### 2. Create the repository structure
-
   ai-agentic-flow/
   ├── frontend/
   ├── backend/
