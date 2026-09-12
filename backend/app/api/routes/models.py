@@ -20,4 +20,3 @@ async def model_health(
 ) -> ModelResponse:
     model = get_model(session, model_id)
     return await check_model_health(session, model, provider)
-

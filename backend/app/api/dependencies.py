@@ -16,4 +16,3 @@ def get_ollama_provider(settings: AppSettings) -> OllamaModelProvider:
 
 
 OllamaProvider = Annotated[OllamaModelProvider, Depends(get_ollama_provider)]
-

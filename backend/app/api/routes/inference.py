@@ -32,4 +32,3 @@ async def chat(
         content=content,
         duration_ms=duration_ms,
     )
-

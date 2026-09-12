@@ -1,2 +1,1 @@
 """SovereignForge application package."""
-

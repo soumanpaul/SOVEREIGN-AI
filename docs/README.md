@@ -1,6 +1,6 @@
 # SovereignForge Engineering Plan
 
-Status: planning baseline  
+Status: Day 2 prototype complete
 Target: seven-day prototype  
 Source brief: [`../details.md`](../details.md)
 
@@ -26,6 +26,9 @@ This folder is the implementation source of truth for **SovereignForge**, an on-
 | [14-traceability-and-checklists.md](14-traceability-and-checklists.md) | Requirements coverage, readiness and release checklists | Lead, QA |
 | [15-technology-and-engineering-standards.md](15-technology-and-engineering-standards.md) | Chosen stack, repository structure, coding and review standards | Developers, DevOps |
 | [16-day-1-build-record.md](16-day-1-build-record.md) | Implemented foundation, verification evidence, and remaining limitations | Lead, developers, QA |
+| [17-day-2-build-record.md](17-day-2-build-record.md) | Implemented knowledge ingestion/retrieval, verification evidence, and Day 3 handoff | Lead, developers, QA |
+| [18-proposed-solution.md](18-proposed-solution.md) | Submission-ready solution explanation, problem alignment, innovation, and current evidence | Judges, product, presenters |
+| [19-setup-and-run-guide.md](19-setup-and-run-guide.md) | First-time machine setup, daily startup, shutdown, migration, and troubleshooting | Developers, operators |
 
 ## Working rules
 

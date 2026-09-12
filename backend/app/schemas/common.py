@@ -47,4 +47,3 @@ class InferenceResponse(BaseModel):
     content: str
     duration_ms: int
     local: Literal[True] = True
-

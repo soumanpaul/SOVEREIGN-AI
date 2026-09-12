@@ -1,21 +1,44 @@
-.PHONY: setup up down logs migrate test check backend-dev frontend-dev ollama-serve ollama-models
+COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi)
+DOCKER_CONFIG ?= $(CURDIR)/.docker-local
+COLIMA_SOCKET := $(HOME)/.colima/default/docker.sock
+USE_COLIMA ?= $(shell if command -v colima >/dev/null 2>&1 && colima status >/dev/null 2>&1; then echo 1; else echo 0; fi)
+LOCAL_DOCKER_HOST := $(if $(filter 1,$(USE_COLIMA)),DOCKER_HOST=unix://$(COLIMA_SOCKET),)
+DOCKER_ENV := DOCKER_CONFIG=$(DOCKER_CONFIG) $(LOCAL_DOCKER_HOST)
+
+.PHONY: setup doctor up down restart status logs migrate test check backend-dev frontend-dev ollama-serve ollama-models
 
 setup:
 	test -f .env || cp .env.example .env
 	npm install
 	cd backend && uv sync --dev
 
+doctor:
+	@command -v node >/dev/null || (echo "Missing Node.js 22+" && exit 1)
+	@node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)' || (echo "Node.js 22+ is required" && exit 1)
+	@command -v npm >/dev/null || (echo "Missing npm" && exit 1)
+	@command -v uv >/dev/null || (echo "Missing uv" && exit 1)
+	@command -v ollama >/dev/null || (echo "Missing Ollama" && exit 1)
+	@command -v docker >/dev/null || (echo "Missing Docker CLI" && exit 1)
+	@$(COMPOSE) version >/dev/null || (echo "Missing Docker Compose" && exit 1)
+	@echo "Required development tools are installed."
+
 up:
-	DOCKER_CONFIG=$(CURDIR)/.docker-local DOCKER_HOST=unix://$(HOME)/.colima/default/docker.sock docker-compose up --build -d
+	$(DOCKER_ENV) $(COMPOSE) up --build -d
 
 down:
-	DOCKER_CONFIG=$(CURDIR)/.docker-local DOCKER_HOST=unix://$(HOME)/.colima/default/docker.sock docker-compose down
+	$(DOCKER_ENV) $(COMPOSE) down
+
+restart:
+	$(DOCKER_ENV) $(COMPOSE) restart
+
+status:
+	$(DOCKER_ENV) $(COMPOSE) ps
 
 logs:
-	DOCKER_CONFIG=$(CURDIR)/.docker-local DOCKER_HOST=unix://$(HOME)/.colima/default/docker.sock docker-compose logs -f --tail=200
+	$(DOCKER_ENV) $(COMPOSE) logs -f --tail=200
 
 migrate:
-	DOCKER_CONFIG=$(CURDIR)/.docker-local DOCKER_HOST=unix://$(HOME)/.colima/default/docker.sock docker-compose run --rm api-worker alembic upgrade head
+	$(DOCKER_ENV) $(COMPOSE) run --rm api-worker alembic upgrade head
 
 test:
 	npm run test

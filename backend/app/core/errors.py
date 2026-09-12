@@ -9,4 +9,3 @@ class AppError(Exception):
     status_code: int = 400
     retryable: bool = False
     details: dict[str, Any] = field(default_factory=dict)
-

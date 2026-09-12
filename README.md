@@ -1,10 +1,10 @@
 # SovereignForge
-
-Local-first agentic AI workbench for confidential industrial work. The current implementation milestone is the Day 1 foundation: UI, API, PostgreSQL model registry, Qdrant readiness, and native Ollama inference.
+- Local-first agentic AI workbench for confidential industrial work. The current implementation milestone is Day 2: secure local document ingestion, PDF/OCR extraction, versioned Qdrant indexing, and cited semantic retrieval.
 
 The repository uses Turborepo with npm workspaces to coordinate frontend and Python-backend development, checks, tests, and builds. Python commands remain managed by `uv`.
 
 Read the engineering plan at [`docs/README.md`](docs/README.md).
+For setup on this or another machine, follow [`docs/19-setup-and-run-guide.md`](docs/19-setup-and-run-guide.md).
 
 ## M1 8 GB development profile
 
@@ -40,7 +40,9 @@ make setup
 make up
 ```
 
-Then open <http://localhost:3000>. API documentation is at <http://localhost:8000/docs>.
+Then open <http://localhost:3000>. The grounded document workflow is at <http://localhost:3000/knowledge>, and API documentation is at <http://localhost:8000/docs>.
+
+For a deterministic Day 2 demo, upload `demo-data/pump-maintenance-sop.md` on the Knowledge screen and search for: `How do I safely isolate pump P-101 before maintenance?`
 
 ## Verification
 
@@ -59,14 +61,14 @@ npm run build
 ```
 
 ## Host development
-
-Run infrastructure with Docker but use host processes for rapid development. Override `DATABASE_URL` and `QDRANT_URL` to localhost if publishing those ports in a development-only Compose override. The default Compose intentionally keeps data stores private.
+- Run infrastructure with Docker but use host processes for rapid development. Override `DATABASE_URL` and `QDRANT_URL` to localhost if publishing those ports in a development-only Compose override. The default Compose intentionally keeps data stores private.
 
 ## Important boundaries
-
 - No cloud model provider is configured.
 - Ollama is started with its cloud features disabled by the provided target.
 - Native Ollama is reachable by the backend through `host.docker.internal`.
 - Qdrant and PostgreSQL are not exposed to the host/public network.
-- The temporary inference endpoint exists only to prove the Day 1 vertical slice. Workflow tasks replace it in later milestones.
+- Uploaded files use opaque local storage keys and are never addressed by caller-supplied paths.
+- Knowledge vectors are version-filtered; a version becomes active only after successful ingestion.
+- The temporary inference endpoint exists only to prove the foundation vertical slice. Workflow tasks replace it in Day 3.
 - `make up` uses an ignored project-local Docker CLI state directory because this machine's historical global buildx state is root-owned.

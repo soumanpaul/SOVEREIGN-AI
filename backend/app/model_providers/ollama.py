@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 
 from app.core.errors import AppError
-from app.model_providers.base import ChatRequest, ChatResult, ProviderHealth
+from app.model_providers.base import ChatRequest, ChatResult, EmbeddingResult, ProviderHealth
 
 
 class OllamaModelProvider:
@@ -82,3 +82,32 @@ class OllamaModelProvider:
                 retryable=True,
             )
         return ChatResult(content=content, duration_ms=elapsed)
+
+    async def embed(self, texts: list[str], model_key: str) -> EmbeddingResult:
+        if not texts:
+            return EmbeddingResult(vectors=[], duration_ms=0)
+        started = time.perf_counter()
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                response = await client.post(
+                    f"{self._base_url}/api/embed",
+                    json={"model": model_key, "input": texts, "truncate": True, "keep_alive": "2m"},
+                )
+                response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise AppError(
+                code="EMBEDDING_FAILED",
+                message="The local embedding model could not process the text.",
+                status_code=503,
+                retryable=True,
+            ) from exc
+        vectors = response.json().get("embeddings", [])
+        if len(vectors) != len(texts):
+            raise AppError(
+                code="EMBEDDING_COUNT_MISMATCH",
+                message="Embedding output was incomplete.",
+                status_code=502,
+            )
+        return EmbeddingResult(
+            vectors=vectors, duration_ms=int((time.perf_counter() - started) * 1000)
+        )

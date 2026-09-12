@@ -37,4 +37,3 @@ async def test_chat_returns_safe_error_when_ollama_is_unreachable(
 
     assert captured.value.code == "OLLAMA_UNAVAILABLE"
     assert "secret host detail" not in captured.value.message
-

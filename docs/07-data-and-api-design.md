@@ -64,8 +64,9 @@ Add indexes on workspace/status/timestamps, `(run_id, sequence)` unique, file ch
 | `GET /workspaces/{id}/files` | List files | `200 Page[StoredFile]` |
 | `GET /files/{id}/content` | Download authorized file | streamed content |
 | `POST /knowledge-bases` | Create KB | `201 KnowledgeBase` |
-| `POST /knowledge-bases/{id}/documents` | Add/ingest documents | `202 IngestionJob` |
-| `GET /knowledge-bases/{id}` | KB and ingestion status | `200 KnowledgeBase` |
+| `GET /knowledge-bases?workspace_id={id}` | List workspace knowledge bases | `200 KnowledgeBase[]` |
+| `POST /knowledge-bases/{id}/ingestions` | Stage a new full-set index version | `202 IngestionJob` |
+| `GET /ingestions/{id}` | Poll ingestion status/errors | `200 IngestionJob` |
 | `POST /knowledge-bases/{id}/search` | Debug/test retrieval | `200 SearchResult[]` |
 | `POST /tasks` | Create and queue task | `202 Task` |
 | `GET /tasks/{id}` | Task/latest-run state | `200 TaskDetail` |

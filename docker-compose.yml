@@ -35,6 +35,9 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-sovereignforge}:${POSTGRES_PASSWORD:-sovereignforge_dev}@postgres:5432/${POSTGRES_DB:-sovereignforge}
       QDRANT_URL: http://qdrant:6333
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      DATA_ROOT: /app/data
+    volumes:
+      - workspace_data:/app/data
     ports:
       - "8000:8000"
     networks: [app_net, data_net]
@@ -68,3 +71,4 @@ networks:
 volumes:
   postgres_data:
   qdrant_data:
+  workspace_data:

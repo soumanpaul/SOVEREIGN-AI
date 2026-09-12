@@ -16,6 +16,12 @@ class ChatResult:
 
 
 @dataclass(frozen=True, slots=True)
+class EmbeddingResult:
+    vectors: list[list[float]]
+    duration_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class ProviderHealth:
     ready: bool
     latency_ms: int
@@ -27,3 +33,4 @@ class ModelProvider(Protocol):
 
     async def health(self, model_key: str) -> ProviderHealth: ...
 
+    async def embed(self, texts: list[str], model_key: str) -> EmbeddingResult: ...

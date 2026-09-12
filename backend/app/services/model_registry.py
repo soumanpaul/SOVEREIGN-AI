@@ -40,8 +40,10 @@ def to_response(model: RegisteredModel) -> ModelResponse:
 
 
 def list_models(session: Session) -> list[ModelResponse]:
-    statement = select(RegisteredModel).where(RegisteredModel.enabled.is_(True)).order_by(
-        RegisteredModel.priority.desc(), RegisteredModel.name
+    statement = (
+        select(RegisteredModel)
+        .where(RegisteredModel.enabled.is_(True))
+        .order_by(RegisteredModel.priority.desc(), RegisteredModel.name)
     )
     return [to_response(model) for model in session.scalars(statement).unique().all()]
 

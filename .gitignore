@@ -27,6 +27,8 @@ data/
 *.db
 *.log
 .DS_Store
+.playwright-mcp/
+/day2-knowledge.png
 
 # Editors
 .idea/

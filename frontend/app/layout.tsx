@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 const navigation = [
   ["Dashboard", "/"],
   ["Workbench", "/workbench"],
+  ["Knowledge", "/knowledge"],
   ["Models", "/models"],
 ] as const;
 
@@ -47,4 +48,3 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     </html>
   );
 }
-

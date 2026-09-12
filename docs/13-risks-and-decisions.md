@@ -91,12 +91,19 @@ Scales: probability/impact `L`, `M`, `H`. Owners are roles to assign.
 - Rationale: native Ollama uses Apple Metal, while a Linux container on macOS would not provide the same practical acceleration on the M1 8 GB demo machine.
 - Consequence: the API needs an explicit host-gateway route, and Day 6 egress controls must preserve only that local dependency route. The final sovereignty claim remains scoped to measured/enforced boundaries.
 
+### ADR-011: versioned full-set ingestion command
+
+- Status: accepted on Day 2.
+- Decision: `POST /knowledge-bases/{id}/ingestions` receives the complete desired file set and creates an immutable index version. Activation occurs only after extraction, metadata persistence, embedding, and vector upsert all succeed.
+- Rationale: an explicit ingestion resource exposes progress/failure cleanly and avoids ambiguous partial-add semantics. It also gives Day 3 a durable command boundary to move from framework background tasks to a DB-claimed worker.
+- Consequence: clients must send the desired file set for each replacement version; incremental vector patching and garbage collection of inactive versions are deferred.
+
 ## Open decisions with deadline
 
 | Decision | Decide by | Evidence needed | Default |
 |---|---|---|---|
 | Exact general/vision/coder/embedding models | Day 1 | demo hardware VRAM, capability smoke tests, licenses | smallest capable quantized models |
-| OCR engine | Day 1/2 | accuracy/install/offline test on demo PDFs | Tesseract if simpler; PaddleOCR if materially better |
-| In-process worker mechanism | Day 1 | framework fit and restart test | DB-claimed background worker |
+| OCR engine | Resolved Day 2 | page-level fallback verified locally | Tesseract 5 |
+| In-process worker mechanism | Resolved for Day 2 | complete vertical slice; restart durability deferred | FastAPI background task, DB job record |
 | Host egress enforcement method | Day 1 | OS/Docker environment | internal network + sandbox none |
 | Demo office viewers | Day 5 | target machine availability | LibreOffice or installed standard suite |

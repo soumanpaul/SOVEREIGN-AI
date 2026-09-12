@@ -48,4 +48,3 @@ async def readiness(session: DatabaseSession, settings: AppSettings) -> HealthSt
 
     overall = "ok" if all(item["status"] == "ready" for item in checks.values()) else "degraded"
     return HealthStatus(status=overall, service="api", details={"dependencies": checks})
-
