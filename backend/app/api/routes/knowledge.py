@@ -1,10 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, File, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 from sqlalchemy import select
 
-from app.api.dependencies import AppSettings, DatabaseSession, OllamaProvider
+from app.api.dependencies import AppSettings, DatabaseSession, OllamaProvider, get_current_user
 from app.core.errors import AppError
 from app.db.models import IngestionJob, KnowledgeBase, StoredFile, Workspace
 from app.schemas.knowledge import (
@@ -23,7 +23,7 @@ from app.services.file_storage import store_upload
 from app.services.knowledge_ingestion import run_ingestion
 from app.services.qdrant_store import QdrantStore
 
-router = APIRouter(tags=["knowledge"])
+router = APIRouter(tags=["knowledge"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/workspaces", response_model=list[WorkspaceResponse])

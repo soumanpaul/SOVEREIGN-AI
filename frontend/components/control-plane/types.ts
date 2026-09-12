@@ -9,7 +9,7 @@ export type Hit = { score: number; text: string; citation: { display_name: strin
 export type InferenceResult = { model_id: string; model_name: string; provider: "ollama"; content: string; duration_ms: number; local: true };
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, init);
+  const response = await fetch(`${API_URL}${path}`, { ...init, credentials: "include" });
   const body = await response.json().catch(() => null) as ({ error?: { message?: string } } & T) | null;
   if (!response.ok) throw new Error(body?.error?.message ?? `Request failed (${response.status})`);
   return body as T;

@@ -33,7 +33,10 @@ export type RegisteredModel = {
 };
 
 export async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+  const response = await fetch(`${API_URL}${path}`, {
+    cache: "no-store",
+    credentials: "include",
+  });
   if (!response.ok) throw new Error(`Request failed (${response.status})`);
   return (await response.json()) as T;
 }
@@ -42,4 +45,3 @@ export function formatContextWindow(value: number | null): string {
   if (value === null) return "Unknown";
   return value >= 1024 ? `${Math.round(value / 1024)}K` : String(value);
 }
-

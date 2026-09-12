@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     frontend_origin: str = "http://localhost:3000"
+    auth_cookie_name: str = "sovereignforge_session"
+    auth_session_hours: int = Field(default=24 * 7, ge=1, le=24 * 90)
 
     database_url: str = (
         "postgresql+psycopg://sovereignforge:sovereignforge_dev@localhost:5432/sovereignforge"

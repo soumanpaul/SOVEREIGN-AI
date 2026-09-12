@@ -1,10 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from app.api.dependencies import AppSettings, DatabaseSession, OllamaProvider
+from app.api.dependencies import AppSettings, DatabaseSession, OllamaProvider, get_current_user
 from app.schemas.common import InferenceRequest, InferenceResponse
 from app.services.model_registry import get_model, run_inference, select_general_model
 
-router = APIRouter(prefix="/inference", tags=["inference"])
+router = APIRouter(
+    prefix="/inference", tags=["inference"], dependencies=[Depends(get_current_user)]
+)
 
 
 @router.post("/chat", response_model=InferenceResponse)

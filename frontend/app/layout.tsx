@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-import { ControlPlane } from "@/components/control-plane/control-plane";
+import { AppFrame } from "@/components/auth/app-frame";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="en"><body><Providers><ControlPlane>{children}</ControlPlane></Providers></body></html>;
+  return <html lang="en" data-theme="dark"><head><script dangerouslySetInnerHTML={{ __html: "try{document.documentElement.dataset.theme=localStorage.getItem('sovereignforge-theme')==='light'?'light':'dark'}catch(e){}" }} /></head><body><Providers><AppFrame>{children}</AppFrame></Providers></body></html>;
 }
