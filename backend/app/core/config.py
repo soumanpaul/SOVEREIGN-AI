@@ -32,6 +32,31 @@ class Settings(BaseSettings):
     chunk_size_chars: int = Field(default=2800, ge=500)
     chunk_overlap_chars: int = Field(default=400, ge=0)
     embedding_model: str = "nomic-embed-text"
+    task_max_steps: int = Field(default=30, ge=3, le=40)
+    task_max_retries: int = Field(default=2, ge=0, le=5)
+    task_timeout_seconds: int = Field(default=180, ge=30, le=900)
+    tool_timeout_seconds: int = Field(default=30, ge=5, le=120)
+    max_tool_output_chars: int = Field(default=12_000, ge=1_000, le=50_000)
+    task_direct_read_chars: int = Field(default=10_000, ge=1_000, le=50_000)
+    task_ephemeral_max_chunks: int = Field(default=128, ge=8, le=512)
+    task_embedding_batch_size: int = Field(default=8, ge=1, le=32)
+    task_kb_hits_per_base: int = Field(default=5, ge=1, le=10)
+    task_evidence_max_hits: int = Field(default=10, ge=1, le=30)
+    task_evidence_max_chars: int = Field(default=24_000, ge=2_000, le=100_000)
+    task_evidence_timeout_seconds: int = Field(default=120, ge=10, le=600)
+    sandbox_runner_url: str = "http://sandbox-runner:8090"
+    sandbox_runner_token: str = "sandbox-dev-token"
+    sandbox_test_command: str = "pytest"
+    sandbox_timeout_seconds: int = Field(default=45, ge=2, le=120)
+    sandbox_memory_mb: int = Field(default=256, ge=64, le=512)
+    sandbox_cpu_count: float = Field(default=1.0, ge=0.25, le=2)
+    sandbox_pids_limit: int = Field(default=64, ge=16, le=128)
+    sandbox_max_output_bytes: int = Field(default=200_000, ge=1_000, le=500_000)
+    sandbox_max_repository_bytes: int = Field(default=10 * 1024 * 1024, ge=1_024)
+    sandbox_max_files: int = Field(default=200, ge=1, le=1_000)
+    sandbox_max_patch_chars: int = Field(default=100_000, ge=1_000, le=500_000)
+    sandbox_repository_context_chars: int = Field(default=32_000, ge=2_000, le=100_000)
+    sandbox_max_attempts: int = Field(default=6, ge=1, le=8)
 
 
 @lru_cache

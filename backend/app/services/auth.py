@@ -1,6 +1,7 @@
 import hashlib
 import re
 import secrets
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher
@@ -10,8 +11,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.errors import AppError
-from app.db.models import AuthSession, Organization, User
-from app.schemas.auth import AuthUserResponse, OrganizationResponse, SignupRequest
+from app.db.models import AuthSession, Organization, User, Workspace
+from app.schemas.auth import AuthUserResponse, OrganizationResponse, SessionResponse, SignupRequest
 
 password_hasher = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
 
@@ -41,14 +42,18 @@ def create_account(session: Session, data: SignupRequest) -> User:
         name=data.organization_name,
         slug=organization_slug(data.organization_name),
     )
+    session.add(organization)
+    session.flush()
     user = User(
-        organization=organization,
+        organization_id=organization.id,
         email=data.email,
         full_name=data.full_name,
         password_hash=hash_password(data.password),
         role="owner",
     )
-    session.add(user)
+    session.add_all(
+        [user, Workspace(organization_id=organization.id, name=f"{organization.name} Workspace")]
+    )
     try:
         session.commit()
     except IntegrityError as error:
@@ -117,6 +122,47 @@ def revoke_session(session: Session, token: str | None) -> None:
     if auth_session is not None:
         session.delete(auth_session)
         session.commit()
+
+
+def update_profile(session: Session, user: User, full_name: str) -> User:
+    user.full_name = full_name
+    user.updated_at = datetime.now(UTC)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+def list_user_sessions(
+    session: Session, user: User, current_token: str | None
+) -> list[SessionResponse]:
+    current_digest = token_digest(current_token) if current_token else None
+    records = list(
+        session.scalars(
+            select(AuthSession)
+            .where(AuthSession.user_id == user.id)
+            .order_by(AuthSession.last_used_at.desc())
+        )
+    )
+    return [
+        SessionResponse(
+            id=record.id,
+            current=record.token_hash == current_digest,
+            created_at=record.created_at,
+            last_used_at=record.last_used_at,
+            expires_at=record.expires_at,
+        )
+        for record in records
+    ]
+
+
+def revoke_user_session(session: Session, user: User, session_id: uuid.UUID) -> None:
+    record = session.scalar(
+        select(AuthSession).where(AuthSession.id == session_id, AuthSession.user_id == user.id)
+    )
+    if record is None:
+        raise AppError("SESSION_NOT_FOUND", "Session not found.", 404)
+    session.delete(record)
+    session.commit()
 
 
 def auth_response(user: User) -> AuthUserResponse:

@@ -77,6 +77,7 @@ Add indexes on workspace/status/timestamps, `(run_id, sequence)` unique, file ch
 | `GET /runs/{id}/artifacts` | Produced artifacts | `200 Artifact[]` |
 | `GET /artifacts/{id}/content` | Download artifact | streamed content |
 | `GET /models` | Registry and latest health | `200 Model[]` |
+| `PATCH /models/{id}` | Owner-only enable or disable routing for a registered model | `200 Model` |
 | `POST /models/{id}/health-check` | Trigger local health check | `202 HealthCheck` |
 | `GET /security/sovereignty-status` | Evidence-based status | `200 SovereigntyStatus` |
 | `POST /security/egress-test` | Run controlled proof | `202 SecurityTest` |

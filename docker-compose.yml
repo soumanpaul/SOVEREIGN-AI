@@ -19,13 +19,33 @@ services:
     image: qdrant/qdrant:v1.15.4
     volumes:
       - qdrant_data:/qdrant/storage
-    networks: [data_net]
+    ports:
+      - "127.0.0.1:6333:6333"
+    networks: [app_net, data_net]
     healthcheck:
       test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/6333"]
       interval: 5s
       timeout: 3s
       retries: 10
     mem_limit: 384m
+
+  pgadmin:
+    image: dpage/pgadmin4:9.17
+    profiles: [development]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-sovereignforge_pgadmin_dev}
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
+      PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "127.0.0.1:5050:80"
+    networks: [app_net, data_net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 512m
 
   api-worker:
     build:
@@ -36,18 +56,52 @@ services:
       QDRANT_URL: http://qdrant:6333
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       DATA_ROOT: /app/data
+      SANDBOX_RUNNER_URL: http://sandbox-runner:8090
+      SANDBOX_RUNNER_TOKEN: ${SANDBOX_RUNNER_TOKEN:-sandbox-dev-token}
     volumes:
       - workspace_data:/app/data
     ports:
       - "8000:8000"
-    networks: [app_net, data_net]
+    networks: [app_net, data_net, sandbox_control_net]
     depends_on:
       postgres:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      sandbox-runner:
+        condition: service_healthy
     command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
     mem_limit: 512m
+
+  sandbox-runtime:
+    build:
+      context: ./sandbox-image
+    image: sovereignforge-sandbox-python:day4
+    entrypoint: ["true"]
+    network_mode: none
+    restart: "no"
+
+  sandbox-runner:
+    build:
+      context: ./sandbox-runner
+    environment:
+      SANDBOX_RUNNER_TOKEN: ${SANDBOX_RUNNER_TOKEN:-sandbox-dev-token}
+      SANDBOX_IMAGE: sovereignforge-sandbox-python:day4
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [sandbox_control_net]
+    depends_on:
+      sandbox-runtime:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    mem_limit: 128m
 
   frontend:
     build:
@@ -67,8 +121,11 @@ networks:
   app_net:
   data_net:
     internal: true
+  sandbox_control_net:
+    internal: true
 
 volumes:
   postgres_data:
   qdrant_data:
   workspace_data:
+  pgadmin_data:

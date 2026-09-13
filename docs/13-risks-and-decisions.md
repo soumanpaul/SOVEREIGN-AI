@@ -98,6 +98,13 @@ Scales: probability/impact `L`, `M`, `H`. Owners are roles to assign.
 - Rationale: an explicit ingestion resource exposes progress/failure cleanly and avoids ambiguous partial-add semantics. It also gives Day 3 a durable command boundary to move from framework background tasks to a DB-claimed worker.
 - Consequence: clients must send the desired file set for each replacement version; incremental vector patching and garbage collection of inactive versions are deferred.
 
+### ADR-012: privileged sandbox controller and ephemeral volumes
+
+- Status: accepted for the Day 4 prototype.
+- Decision: keep the Docker socket out of the API container. An internal token-protected controller creates a short-lived materializer, an ephemeral task volume, and a separate no-network execution container. The generated-code container mounts repository content read-only and is removed with its volume in every terminal path.
+- Rationale: Docker cannot copy an archive directly into a read-only container root. A bounded materializer allows safe population without giving the API daemon access or making the execution mount writable.
+- Consequence: the controller remains daemon-privileged infrastructure. Production hardening requires a dedicated host or micro-VM runtime, mutual authentication, scheduling, and independent monitoring.
+
 ## Open decisions with deadline
 
 | Decision | Decide by | Evidence needed | Default |

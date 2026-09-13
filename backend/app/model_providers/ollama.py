@@ -45,7 +45,7 @@ class OllamaModelProvider:
             "stream": False,
             "keep_alive": request.keep_alive,
             "messages": [{"role": "user", "content": request.prompt}],
-            "options": {"temperature": 0.2},
+            "options": {"temperature": request.temperature, "seed": request.seed},
         }
         started = time.perf_counter()
         try:

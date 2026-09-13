@@ -17,6 +17,16 @@ ALLOWED_TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
+    ".zip": "application/zip",
+    ".py": "text/x-python",
+    ".js": "text/javascript",
+    ".jsx": "text/jsx",
+    ".ts": "text/typescript",
+    ".tsx": "text/tsx",
+    ".json": "application/json",
+    ".toml": "application/toml",
+    ".yaml": "application/yaml",
+    ".yml": "application/yaml",
 }
 
 
@@ -41,7 +51,9 @@ def validate_filename(name: str | None) -> tuple[str, str]:
     suffix = Path(name).suffix.lower()
     if suffix not in ALLOWED_TYPES:
         raise AppError(
-            "UNSUPPORTED_FILE_TYPE", "Use PDF, UTF-8 text, Markdown, CSV, PNG, or JPEG.", 415
+            "UNSUPPORTED_FILE_TYPE",
+            "Use a supported document, image, source-code file, or ZIP repository.",
+            415,
         )
     return name, suffix
 
@@ -79,6 +91,8 @@ async def store_upload(
             raise AppError("INVALID_IMAGE", "The file does not have a valid PNG signature.", 422)
         if suffix in {".jpg", ".jpeg"} and not first.startswith(b"\xff\xd8\xff"):
             raise AppError("INVALID_IMAGE", "The file does not have a valid JPEG signature.", 422)
+        if suffix == ".zip" and not first.startswith(b"PK"):
+            raise AppError("INVALID_ARCHIVE", "The file does not have a valid ZIP signature.", 422)
         os.replace(temporary, target)
     except Exception:
         temporary.unlink(missing_ok=True)

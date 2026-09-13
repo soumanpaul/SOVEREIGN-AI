@@ -1,12 +1,15 @@
 # Product Charter
 
 ## Product statement
-
-SovereignForge is a local-first agentic AI workbench that lets industrial teams analyze confidential documents and images, use internal knowledge, execute controlled tools, and create business artifacts without sending data to external AI services.
+- SovereignForge is a local-first agentic AI workbench that lets industrial teams   `analyze confidential documents` and `images`, `use internal knowledge`, `execute controlled tools`, and c`reate business artifacts` without sending data to external AI services.
 
 ## Problem
-
-Industrial inspection reports, maintenance procedures, procurement bids, and source code are often confidential. Cloud AI products create data-residency, egress, auditability, and tool-safety concerns. Users need useful AI automation while retaining local control over models, files, execution, and evidence.
+- Industrial inspection reports, 
+- maintenance procedures, 
+- procurement bids, and 
+- source code are often confidential. 
+- Cloud AI products create data-residency, egress, auditability, and tool-safety concerns. 
+- Users need useful AI automation while retaining local control over models, files, execution, and evidence.
 
 ## Target users
 
@@ -19,7 +22,7 @@ Industrial inspection reports, maintenance procedures, procurement bids, and sou
 
 ## Product outcomes
 
-The prototype must prove:
+- The prototype must prove:
 
 1. All model inference and embeddings run locally.
 2. Capability-based routing selects between at least two open-weight generation models.

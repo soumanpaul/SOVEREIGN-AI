@@ -1,15 +1,10 @@
-import asyncio
 import hashlib
-import json
 import uuid
 from datetime import UTC, datetime
-
-from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.db.models import (
-    Document,
     DocumentChunk,
     IngestionJob,
     KnowledgeBase,
@@ -18,9 +13,8 @@ from app.db.models import (
 )
 from app.db.session import SessionLocal
 from app.documents.chunker import chunk_pages
-from app.documents.parser import extract_pages
 from app.model_providers.ollama import OllamaModelProvider
-from app.services.file_storage import resolve_storage_key
+from app.services.document_extraction import ensure_document_extracted
 from app.services.qdrant_store import QdrantStore
 
 
@@ -50,35 +44,7 @@ async def run_ingestion(job_id: uuid.UUID) -> None:
                 raise AppError(
                     "FILE_NOT_FOUND", "An ingestion file was not found in this workspace.", 404
                 )
-            document = session.scalar(select(Document).where(Document.file_id == stored.id))
-            if document is None:
-                document = Document(file_id=stored.id)
-                session.add(document)
-                session.flush()
-            pages, warnings = await asyncio.to_thread(
-                extract_pages,
-                resolve_storage_key(settings.data_root, stored.storage_key),
-                stored.media_type,
-                settings.max_pdf_pages,
-                settings.ocr_text_threshold,
-            )
-            if not any(page.text.strip() for page in pages):
-                raise AppError(
-                    "NO_EXTRACTABLE_TEXT",
-                    f"No text could be extracted from {stored.display_name}.",
-                    422,
-                )
-            normalized_key = f"workspaces/{kb.workspace_id}/extracted/{document.id}/pages.json"
-            normalized_path = resolve_storage_key(settings.data_root, normalized_key)
-            normalized_path.parent.mkdir(parents=True, exist_ok=True)
-            normalized_path.write_text(
-                json.dumps([page.to_dict() for page in pages], ensure_ascii=False), encoding="utf-8"
-            )
-            document.page_count = len(pages)
-            document.extraction_status = "completed"
-            document.normalized_path = normalized_key
-            document.warnings = warnings
-            document.updated_at = _now()
+            document, pages = await ensure_document_extracted(session, stored, settings)
             chunks = chunk_pages(pages, settings.chunk_size_chars, settings.chunk_overlap_chars)
             link = KnowledgeBaseDocument(
                 knowledge_base_id=kb.id,

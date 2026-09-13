@@ -5,7 +5,7 @@ USE_COLIMA ?= $(shell if command -v colima >/dev/null 2>&1 && colima status >/de
 LOCAL_DOCKER_HOST := $(if $(filter 1,$(USE_COLIMA)),DOCKER_HOST=unix://$(COLIMA_SOCKET),)
 DOCKER_ENV := DOCKER_CONFIG=$(DOCKER_CONFIG) $(LOCAL_DOCKER_HOST)
 
-.PHONY: setup doctor up down restart status logs migrate test check backend-dev frontend-dev ollama-serve ollama-models
+.PHONY: setup doctor up dev down restart status logs migrate test check backend-dev frontend-dev ollama-serve ollama-models
 
 setup:
 	test -f .env || cp .env.example .env
@@ -24,6 +24,14 @@ doctor:
 
 up:
 	$(DOCKER_ENV) $(COMPOSE) up --build -d
+
+# Run stateful services and the API in Docker, while Next.js runs locally with
+# Fast Refresh. Keep this command in the foreground and press Ctrl-C to stop
+# Next.js; run `make down` when the supporting containers are no longer needed.
+dev:
+	$(DOCKER_ENV) $(COMPOSE) stop frontend
+	$(DOCKER_ENV) $(COMPOSE) up --build -d postgres qdrant api-worker
+	NEXT_PUBLIC_API_URL=$${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1} npm run dev --workspace=@sovereignforge/frontend
 
 down:
 	$(DOCKER_ENV) $(COMPOSE) down

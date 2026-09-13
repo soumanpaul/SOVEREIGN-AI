@@ -1,21 +1,26 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Literal, cast
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
 from app.db.models import ModelHealthRecord, RegisteredModel
 from app.model_providers.base import ChatRequest
 from app.model_providers.ollama import OllamaModelProvider
-from app.schemas.common import ModelHealth, ModelResponse
+from app.schemas.common import ModelCreate, ModelHealth, ModelResponse
 
 
 def _latest_health(model: RegisteredModel) -> ModelHealth | None:
     if not model.health_records:
         return None
     record = max(model.health_records, key=lambda item: item.observed_at)
-    status = record.status if record.status in {"ready", "unavailable", "unknown"} else "unknown"
+    status = cast(
+        Literal["ready", "unavailable", "unknown"],
+        record.status if record.status in {"ready", "unavailable", "unknown"} else "unknown",
+    )
     return ModelHealth(
         status=status,
         observed_at=record.observed_at,
@@ -40,18 +45,51 @@ def to_response(model: RegisteredModel) -> ModelResponse:
 
 
 def list_models(session: Session) -> list[ModelResponse]:
-    statement = (
-        select(RegisteredModel)
-        .where(RegisteredModel.enabled.is_(True))
-        .order_by(RegisteredModel.priority.desc(), RegisteredModel.name)
+    statement = select(RegisteredModel).order_by(
+        RegisteredModel.priority.desc(), RegisteredModel.name
     )
     return [to_response(model) for model in session.scalars(statement).unique().all()]
 
 
+def register_model(session: Session, payload: ModelCreate) -> RegisteredModel:
+    model = RegisteredModel(
+        name=payload.name.strip(),
+        provider="ollama",
+        model_key=payload.model_key,
+        capabilities=list(dict.fromkeys(payload.capabilities)),
+        context_window=payload.context_window,
+        quantization=payload.quantization,
+        priority=payload.priority,
+    )
+    session.add(model)
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise AppError(
+            "MODEL_ALREADY_REGISTERED", "This Ollama model is already registered.", 409
+        ) from exc
+    session.refresh(model)
+    return model
+
+
 def get_model(session: Session, model_id: uuid.UUID) -> RegisteredModel:
     model = session.get(RegisteredModel, model_id)
-    if model is None or not model.enabled:
+    if model is None:
         raise AppError("MODEL_NOT_FOUND", "The requested model is not available.", 404)
+    if not model.enabled:
+        raise AppError("MODEL_DISABLED", "The requested model is disabled.", 409)
+    return model
+
+
+def set_model_enabled(session: Session, model_id: uuid.UUID, enabled: bool) -> RegisteredModel:
+    model = session.get(RegisteredModel, model_id)
+    if model is None:
+        raise AppError("MODEL_NOT_FOUND", "The requested model is not available.", 404)
+    model.enabled = enabled
+    model.updated_at = datetime.now(UTC)
+    session.commit()
+    session.refresh(model)
     return model
 
 

@@ -24,6 +24,7 @@ Priority uses MoSCoW: **M** must, **S** should, **C** could. Each requirement ha
 | FR-014 | M | Search a knowledge base semantically | Top results include document, page/section and relevance score |
 | FR-015 | M | Produce grounded answers | Material claims cite source chunks; absent evidence is reported as such |
 | FR-016 | S | Re-index safely | Replacement index is activated only after successful ingestion |
+| FR-017 | M | Ground Workbench tasks across all selected sources | One small file is read directly; large/multiple files use bounded temporary retrieval; every selected ready knowledge base is searched; merged evidence retains file, knowledge-base and page provenance |
 
 ### Models and routing
 

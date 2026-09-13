@@ -26,6 +26,7 @@ class FileResponse(BaseModel):
     size_bytes: int
     sha256: str
     status: str
+    indexed: bool = False
     created_at: datetime
 
 

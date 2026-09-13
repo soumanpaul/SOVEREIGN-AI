@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -49,3 +50,22 @@ class AuthUserResponse(BaseModel):
     full_name: str
     role: str
     organization: OrganizationResponse
+
+
+class ProfileUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    full_name: str = Field(min_length=2, max_length=160)
+
+    @field_validator("full_name")
+    @classmethod
+    def strip_full_name(cls, value: str) -> str:
+        return value.strip()
+
+
+class SessionResponse(BaseModel):
+    id: UUID
+    current: bool
+    created_at: datetime
+    last_used_at: datetime
+    expires_at: datetime

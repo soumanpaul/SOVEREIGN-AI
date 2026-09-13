@@ -26,6 +26,9 @@ class Workspace(Base):
     __tablename__ = "workspaces"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(24), default="active")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
@@ -233,3 +236,134 @@ class ModelHealthRecord(Base):
     latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     model: Mapped[RegisteredModel] = relationship(back_populates="health_records")
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+    __table_args__ = (
+        Index("ix_tasks_workspace_created", "workspace_id", "created_at"),
+        UniqueConstraint("created_by_user_id", "idempotency_key", name="uq_task_user_idempotency"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    goal: Mapped[str] = mapped_column(Text)
+    mode: Mapped[str] = mapped_column(String(24), default="auto")
+    test_command: Mapped[str] = mapped_column(String(24), default="pytest")
+    task_type: Mapped[str] = mapped_column(String(40), default="pending")
+    required_capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
+    input_file_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    knowledge_base_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    requested_outputs: Mapped[list[str]] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(24), default="queued", index=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    request_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class TaskRun(Base):
+    __tablename__ = "task_runs"
+    __table_args__ = (
+        UniqueConstraint("task_id", "attempt", name="uq_task_run_attempt"),
+        Index("ix_task_runs_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
+    )
+    attempt: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(24), default="queued")
+    selected_model_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("models.id", ondelete="SET NULL"), nullable=True
+    )
+    agent_profile: Mapped[str] = mapped_column(String(60), default="general_agent")
+    route: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    step_count: Mapped[int] = mapped_column(Integer, default=0)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    result_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    citations: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    error_category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class TaskStep(Base):
+    __tablename__ = "task_steps"
+    __table_args__ = (
+        UniqueConstraint("run_id", "sequence", name="uq_task_step_sequence"),
+        Index("ix_task_steps_run_created", "run_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("task_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    sequence: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(24), default="completed")
+    title: Mapped[str] = mapped_column(String(160))
+    detail: Mapped[str] = mapped_column(String(500), default="")
+    tool_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    input: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    output: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Artifact(Base):
+    __tablename__ = "artifacts"
+    __table_args__ = (
+        UniqueConstraint("run_id", "logical_name", "revision", name="uq_artifact_revision"),
+        Index("ix_artifacts_workspace_created", "workspace_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    run_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("task_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    logical_name: Mapped[str] = mapped_column(String(120))
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    display_name: Mapped[str] = mapped_column(String(255))
+    storage_key: Mapped[str] = mapped_column(String(500), unique=True)
+    media_type: Mapped[str] = mapped_column(String(120))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    validation_status: Mapped[str] = mapped_column(String(24), default="valid")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+    __table_args__ = (Index("ix_audit_workspace_occurred", "workspace_id", "occurred_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    run_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("task_runs.id", ondelete="CASCADE"), nullable=True
+    )
+    event_type: Mapped[str] = mapped_column(String(80))
+    actor_type: Mapped[str] = mapped_column(String(32), default="system")
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

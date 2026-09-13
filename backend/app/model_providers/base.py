@@ -7,6 +7,8 @@ class ChatRequest:
     model_key: str
     prompt: str
     keep_alive: str
+    seed: int = 42
+    temperature: float = 0.2
 
 
 @dataclass(frozen=True, slots=True)

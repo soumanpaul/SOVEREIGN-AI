@@ -15,34 +15,37 @@
 ## Architecture review checklist
 
 - [ ] Every module owns one coherent responsibility and dependencies follow the architecture.
-- [ ] PostgreSQL remains authoritative for task and provenance state.
+- [x] PostgreSQL remains authoritative for task and provenance state. (Day 3)
 - [ ] Qdrant points can be rebuilt from normalized data and relational metadata.
 - [ ] Model provider is not referenced directly outside its adapter/service boundary.
-- [ ] All tools pass through schema and policy gateways.
-- [ ] No generated code runs in API/model-serving processes.
-- [ ] Client-controlled names/paths never become trusted storage paths.
-- [ ] Background work has durable state, bounded retries and explicit terminal outcomes.
+- [x] All tools pass through schema and policy gateways. (Day 3)
+- [x] No generated code runs in API/model-serving processes. (Day 4 sandbox boundary)
+- [x] Client-controlled names/paths never become trusted storage paths. (Days 2–3)
+- [x] Background work has durable state, bounded retries and explicit terminal outcomes. (Day 3)
 - [ ] Metrics/UI represent unknown and degraded states honestly.
 
 ## Feature readiness checklist
 
 - [ ] Three versioned demo datasets and fixed prompts exist.
-- [ ] At least two distinct generation model classes plus local embeddings are registered.
-- [ ] Routing decisions and exclusions are visible and persisted.
+- [x] At least two distinct generation model classes plus local embeddings are registered. (Day 1)
+- [x] Routing decisions and exclusions are visible and persisted. (Day 3)
 - [ ] Digital PDF, scan/OCR and image inputs are demonstrated.
-- [ ] RAG answers link to actual page/section evidence.
+- [x] RAG answers link to actual page/section evidence. (Days 2–3)
+- [x] Every selected Workbench file and ready knowledge base is processed through bounded hybrid retrieval, with used pages visible in result and trace evidence. (Day 3 stabilization)
 - [ ] Document, coding and procurement flows pass completion validators.
+- [x] Document and coding flows pass their completion validators; procurement remains Day 5.
 - [ ] DOCX and XLSX open and contain source-correct values.
 - [ ] Task refresh/reconnect, cancellation and failure states behave correctly.
-- [ ] Audit and sovereignty views are driven by backend evidence.
+- [x] Audit view is driven by persistent backend evidence. (Day 3)
+- [ ] Sovereignty view has dedicated egress-verification evidence.
 
 ## Security readiness checklist
 
 - [ ] Runtime/inference networks have no unintended external route.
-- [ ] Sandbox has network disabled, non-root identity, read-only base and resource limits.
-- [ ] Docker socket/privileged runner risk is isolated and documented.
-- [ ] MIME, size, pages/pixels and path containment are enforced.
-- [ ] Tool permissions default deny and all denials are audited.
+- [x] Sandbox has network disabled, non-root identity, read-only base and resource limits. (Day 4)
+- [x] Docker socket/privileged runner risk is isolated and documented. (ADR-012)
+- [x] MIME, size, pages/pixels and path containment are enforced for implemented inputs. (Days 2–4)
+- [x] Tool permissions default deny and all denials are audited. (Days 3–4)
 - [ ] Cross-workspace access and prompt injection tests pass.
 - [ ] Logs/errors contain no prompts, document text, secrets or sensitive host paths.
 - [ ] Artifact spreadsheet injection and unsafe link/macro cases pass.

@@ -1,6 +1,6 @@
 # SovereignForge Engineering Plan
 
-Status: Day 2 prototype complete
+Status: Day 4 prototype complete
 Target: seven-day prototype  
 Source brief: [`../details.md`](../details.md)
 
@@ -29,6 +29,12 @@ This folder is the implementation source of truth for **SovereignForge**, an on-
 | [17-day-2-build-record.md](17-day-2-build-record.md) | Implemented knowledge ingestion/retrieval, verification evidence, and Day 3 handoff | Lead, developers, QA |
 | [18-proposed-solution.md](18-proposed-solution.md) | Submission-ready solution explanation, problem alignment, innovation, and current evidence | Judges, product, presenters |
 | [19-setup-and-run-guide.md](19-setup-and-run-guide.md) | First-time machine setup, daily startup, shutdown, migration, and troubleshooting | Developers, operators |
+| [20-day-3-build-record.md](20-day-3-build-record.md) | Governed task runtime, routing, tools, artifacts, audit trail, and verification evidence | Lead, developers, QA |
+| [21-day-3-ui-stabilization.md](21-day-3-ui-stabilization.md) | Closure record for the 14 reported UI/control gaps and remaining milestone boundaries | Lead, developers, QA |
+| [22-day-3-hybrid-retrieval.md](22-day-3-hybrid-retrieval.md) | Workbench direct-read, temporary RAG, multi-library merge, limits, provenance, and verification | Lead, developers, QA |
+| [23-scaling-and-capacity-plan.md](23-scaling-and-capacity-plan.md) | Current concurrency limits, latency and throughput metrics, ten-user architecture, load tests, and phased scaling plan | Architects, backend, DevOps, QA |
+| [24-m5-16gb-setup-guide.md](24-m5-16gb-setup-guide.md) | Exact installation, model, startup, registration, verification, and daily-use commands for an M5 Mac with 16 GB unified memory | Developers, operators |
+| [24-day-4-build-record.md](24-day-4-build-record.md) | Governed coding mode, sandbox boundaries, patch validation, artifacts, and acceptance evidence | Lead, developers, security, QA |
 
 ## Working rules
 

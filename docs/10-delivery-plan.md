@@ -40,16 +40,17 @@ Exit: clean startup, local response, persisted model metadata, no cloud SDK/depe
 
 Exit: selected SOP uploads, indexes, answers a fixed question with correct page/section.
 
-### Day 3: routing and agent runtime
+### Day 3: routing and agent runtime — completed 2026-09-13
 
 - Task contracts/state machine, worker and SSE/poll trace.
 - Deterministic classifier/capability router with fixtures.
 - Agent loop, strict action schemas, registry/policy gateway.
 - `read_file`, `search_knowledge`, `create_docx`; inspection vertical slice.
+- Hybrid Workbench evidence: direct reads for small files, temporary task-scoped RAG for large/multiple files, multi-knowledge-base retrieval, global ranking and source traceability.
 
 Exit: one prompt routes, retrieves, generates and validates an approval DOCX automatically.
 
-### Day 4: coding sandbox
+### Day 4: coding sandbox — completed 2026-09-13
 
 - Coding profile/model route, repository read and patch proposal tools.
 - Hardened ephemeral runner, fixed commands, limits, output capture and cleanup.

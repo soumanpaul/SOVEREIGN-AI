@@ -6,13 +6,16 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, health, inference, knowledge, models
+from app.api.routes import auth, health, inference, knowledge, models, security, tasks
 from app.core.config import get_settings
 from app.core.errors import AppError
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    from app.tasks.runtime import recover_incomplete_runs
+
+    await recover_incomplete_runs()
     yield
 
 
@@ -27,7 +30,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Idempotency-Key"],
 )
 
@@ -54,3 +57,5 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(models.router, prefix="/api/v1")
 app.include_router(inference.router, prefix="/api/v1")
 app.include_router(knowledge.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(security.router, prefix="/api/v1")

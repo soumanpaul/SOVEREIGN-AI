@@ -33,6 +33,32 @@ class ModelResponse(BaseModel):
     latest_health: ModelHealth | None = None
 
 
+class ModelCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=2, max_length=120)
+    model_key: str = Field(min_length=2, max_length=160, pattern=r"^[a-zA-Z0-9._:/-]+$")
+    capabilities: list[Literal["text", "reasoning", "general", "coding", "embedding", "vision"]] = (
+        Field(min_length=1, max_length=6)
+    )
+    context_window: int | None = Field(default=None, ge=512, le=1_000_000)
+    quantization: str | None = Field(default=None, max_length=40)
+    priority: int = Field(default=50, ge=0, le=1_000)
+
+
+class ModelStateUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+
+
+class EgressTestResponse(BaseModel):
+    status: Literal["blocked", "egress_detected", "error"]
+    target: str
+    duration_ms: int
+    detail: str
+
+
 class InferenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

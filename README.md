@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img alt="Prototype status" src="https://img.shields.io/badge/status-Day%202%20prototype-16a34a" />
+  <img alt="Prototype status" src="https://img.shields.io/badge/status-Day%204%20prototype-16a34a" />
   <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
   <img alt="Node.js 22+" src="https://img.shields.io/badge/Node.js-22%2B-339933?logo=nodedotjs&logoColor=white" />
   <img alt="Local AI with Ollama" src="https://img.shields.io/badge/AI-local%20via%20Ollama-111827" />
@@ -20,7 +20,7 @@
 </p>
 
 > [!IMPORTANT]
-> SOVEREIGN-AI is an actively developed competition prototype, not a production-certified platform. The current repository proves the application foundation and local knowledge vertical slice. Agent orchestration, sandboxed execution, artifact generation, and complete egress verification remain planned milestones.
+> SOVEREIGN-AI is an actively developed competition prototype, not a production-certified platform. The current repository proves local knowledge, governed document agents, and a network-disabled coding-agent vertical slice. Human review is still required before using generated artifacts or patches in production.
 
 ## What is SOVEREIGN-AI?
 
@@ -51,10 +51,12 @@ SOVEREIGN-AI treats those concerns as product capabilities rather than deploymen
 | Document extraction | Available | PDF text extraction, page-level Tesseract OCR fallback, text/Markdown/CSV/image support |
 | Local knowledge indexing | Available | Deterministic chunks, local embeddings, Qdrant vectors, staged index activation |
 | Cited semantic retrieval | Available | Workspace- and version-scoped results with document and page provenance |
-| Durable task runtime and model router | Planned | Contracts and acceptance criteria are defined in `/docs` |
-| Tool policy gateway and audit trace | Planned | Default-deny design and schemas are specified |
-| Network-disabled coding sandbox | Planned | Isolation and resource-limit design is specified |
-| DOCX/XLSX artifact pipeline | Planned | Template, validation, checksum, and provenance design is specified |
+| Durable task runtime and model router | Available | Persisted tasks/runs/steps, bounded retries, deterministic routing |
+| Tool policy gateway and audit trace | Available | Profile allowlists, default deny, task-aware Trace UI and audit JSON |
+| Network-disabled coding sandbox | Available | Ephemeral non-root containers, fixed commands, limits, active egress probe |
+| DOCX artifact pipeline | Available | Markdown-aware generated document, validation, checksum, and trademark footer |
+| Coding artifacts | Available | Verified patch, repository ZIP, and sandbox evidence JSON |
+| XLSX artifact pipeline | Planned | Procurement template and validation remain Day 5 scope |
 | Sovereignty Center and egress proof | Planned | Evidence model and negative security tests are specified |
 
 ## Target workflows
@@ -63,7 +65,7 @@ SOVEREIGN-AI treats those concerns as product capabilities rather than deploymen
 2. **Safe coding agent** — diagnose supplied code, propose a patch, and verify it inside an ephemeral network-disabled sandbox.
 3. **Procurement decision support** — compare quotations against policy and produce traceable XLSX/DOCX decision artifacts.
 
-These are target end-to-end workflows. The current Day 2 build completes the shared local-document and retrieval foundation they depend on.
+The inspection/document and safe-coding paths are implemented through Day 4. Procurement and XLSX output remain Day 5 scope.
 
 ## Architecture
 
@@ -86,6 +88,7 @@ SOVEREIGN-AI uses a modular-monolith application with replaceable local infrastr
 | Local models | Ollama |
 | Extraction and OCR | PyMuPDF, Tesseract |
 | Orchestration | Turborepo, npm workspaces, `uv` |
+| Code isolation | Dedicated sandbox controller and ephemeral Docker containers |
 | Deployment | Docker Compose |
 
 ## Quick start
@@ -128,10 +131,22 @@ Open the following local endpoints:
 |---|---|
 | Web application | <http://localhost:3000> |
 | Knowledge workflow | <http://localhost:3000/knowledge> |
+| Agent workbench | <http://localhost:3000/workbench> |
+| Execution trace | <http://localhost:3000/trace> |
 | FastAPI documentation | <http://localhost:8000/docs> |
 | Readiness endpoint | <http://localhost:8000/api/v1/readiness> |
 
 For full setup, migration, shutdown, and troubleshooting guidance, use the [Setup and Run Guide](docs/19-setup-and-run-guide.md).
+
+### Frontend development with hot reload
+
+Run the infrastructure and API in Docker while Next.js runs locally with Fast Refresh:
+
+```bash
+make dev
+```
+
+Keep the command running while editing files under `frontend/`. Press `Ctrl-C` to stop Next.js, then run `make down` when you also want to stop the supporting Docker services. Use `make up` for the production-style, fully containerized stack; frontend source changes require an image rebuild in that mode.
 
 ## Try the grounded-knowledge demo
 
@@ -162,7 +177,7 @@ curl http://localhost:8000/api/v1/health
 curl http://localhost:8000/api/v1/readiness
 ```
 
-The recorded Day 2 build passed backend and frontend tests, Ruff, strict mypy, ESLint, TypeScript checks, a Next.js production build, real local-model inference, document ingestion, cited Qdrant retrieval, and browser verification. See the [Day 2 Build Record](docs/17-day-2-build-record.md) for the exact evidence and limitations.
+The recorded Day 4 build additionally passed a real browser coding run: failed baseline tests, active no-network proof, a local-model patch applied to an isolated working copy, passing sandbox tests, three downloaded artifacts, and cleanup with no residual sandbox container or volume. See the [Day 4 Build Record](docs/24-day-4-build-record.md).
 
 ## API overview
 
@@ -171,6 +186,7 @@ The recorded Day 2 build passed backend and frontend tests, Ruff, strict mypy, E
 | `GET` | `/api/v1/health` | API liveness |
 | `GET` | `/api/v1/readiness` | PostgreSQL, Qdrant, and Ollama readiness |
 | `GET` | `/api/v1/models` | List registered local models |
+| `PATCH` | `/api/v1/models/{model_id}` | Owner-only enable or disable model routing |
 | `POST` | `/api/v1/models/{model_id}/health-check` | Refresh model health |
 | `POST` | `/api/v1/inference/chat` | Temporary foundation inference endpoint |
 | `GET/POST` | `/api/v1/workspaces` | List or create workspaces |
@@ -179,8 +195,11 @@ The recorded Day 2 build passed backend and frontend tests, Ruff, strict mypy, E
 | `POST` | `/api/v1/knowledge-bases/{id}/ingestions` | Start staged versioned ingestion |
 | `GET` | `/api/v1/ingestions/{id}` | Poll ingestion status |
 | `POST` | `/api/v1/knowledge-bases/{id}/search` | Retrieve cited semantic matches |
+| `GET/POST` | `/api/v1/tasks` | List or create governed document/coding tasks |
+| `GET` | `/api/v1/tasks/{id}` | Read durable task, steps, result, and artifacts |
+| `GET` | `/api/v1/artifacts/{id}/content` | Download an authorized immutable artifact |
 
-The direct inference route is intentionally temporary; governed task APIs will own model selection in the agent-runtime milestone.
+The direct inference route remains a foundation/debug endpoint; user workflows use governed task APIs and deterministic model selection.
 
 ## Security and data-sovereignty posture
 
@@ -193,8 +212,11 @@ Implemented today:
 - PDF/image signatures, extensions, and upload size are validated;
 - embeddings and inference are performed by local Ollama models;
 - knowledge indexes activate a new version only after successful ingestion.
+- generated code runs in an ephemeral non-root container with network disabled, a read-only repository, fixed commands, and bounded CPU, memory, PIDs, time, and output;
+- the API has no Docker socket; an internal sandbox controller owns the privileged daemon boundary;
+- source uploads remain immutable and code artifacts publish only after fixed verification passes.
 
-Known boundary: complete application-runtime egress blocking and its repeatable evidence probe are not implemented yet. See [Security and Sovereignty](docs/08-security-and-sovereignty.md) for the threat model, planned controls, and proof strategy.
+Known boundary: the Day 4 proof covers generated-code containers, not every host process or Docker control-plane action. The Docker controller is a privileged prototype boundary that needs dedicated-host or micro-VM isolation for production. See [Security and Sovereignty](docs/08-security-and-sovereignty.md).
 
 ## Repository layout
 
@@ -202,6 +224,9 @@ Known boundary: complete application-runtime egress blocking and its repeatable 
 .
 ├── frontend/          Next.js application and frontend tests
 ├── backend/           FastAPI API, services, migrations, and tests
+├── sandbox-image/     constrained generated-code runtime
+├── sandbox-runner/    internal ephemeral-container controller
+├── demo/              deterministic workflow fixtures
 ├── demo-data/         Deterministic local demonstration inputs
 ├── docs/              Product, architecture, security, and delivery source of truth
 ├── docker-compose.yml Local application and data-service topology
@@ -227,8 +252,8 @@ Start with the [Engineering Plan](docs/README.md), which indexes the complete sp
 
 - **Day 1 — complete:** monorepo foundation, local model provider, registry, health, UI, and private data services.
 - **Day 2 — complete:** secure ingestion, PDF/OCR extraction, versioned Qdrant indexing, and cited retrieval.
-- **Day 3:** durable task state, deterministic routing, governed agent loop, and trace events.
-- **Day 4:** coding sandbox and multimodal inspection workflow.
+- **Day 3 — complete:** durable task state, deterministic routing, governed agent loop, hybrid evidence, DOCX, and trace events.
+- **Day 4 — complete:** coding route, secure repository intake, network-disabled sandbox verification, retries, and code artifacts.
 - **Day 5:** DOCX/XLSX artifacts and procurement workflow.
 - **Day 6:** audit, sovereignty evidence, and negative security tests.
 - **Day 7:** evaluation, offline rehearsal, packaging, and submission evidence.

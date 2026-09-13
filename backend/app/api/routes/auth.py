@@ -1,13 +1,24 @@
+import uuid
+
 from fastapi import APIRouter, Request, Response
 
 from app.api.dependencies import AppSettings, CurrentUser, DatabaseSession
-from app.schemas.auth import AuthUserResponse, SigninRequest, SignupRequest
+from app.schemas.auth import (
+    AuthUserResponse,
+    ProfileUpdate,
+    SessionResponse,
+    SigninRequest,
+    SignupRequest,
+)
 from app.services.auth import (
     auth_response,
     authenticate,
     create_account,
     create_auth_session,
+    list_user_sessions,
     revoke_session,
+    revoke_user_session,
+    update_profile,
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -54,6 +65,30 @@ def signin(
 @router.get("/me", response_model=AuthUserResponse)
 def me(user: CurrentUser) -> AuthUserResponse:
     return auth_response(user)
+
+
+@router.patch("/me", response_model=AuthUserResponse)
+def change_profile(
+    data: ProfileUpdate, session: DatabaseSession, user: CurrentUser
+) -> AuthUserResponse:
+    return auth_response(update_profile(session, user, data.full_name))
+
+
+@router.get("/sessions", response_model=list[SessionResponse])
+def sessions(
+    request: Request,
+    session: DatabaseSession,
+    settings: AppSettings,
+    user: CurrentUser,
+) -> list[SessionResponse]:
+    return list_user_sessions(session, user, request.cookies.get(settings.auth_cookie_name))
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+def delete_session(
+    session_id: uuid.UUID, session: DatabaseSession, user: CurrentUser
+) -> None:
+    revoke_user_session(session, user, session_id)
 
 
 @router.post("/signout", status_code=204)

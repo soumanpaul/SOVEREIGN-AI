@@ -23,6 +23,8 @@ This is the operator runbook for starting SovereignForge on the current Mac and 
 | Ollama | Native host process | `http://localhost:11434` |
 | PostgreSQL | Private Docker network | not published to host |
 | Qdrant | Private Docker network | not published to host |
+| Sandbox controller | Private internal Docker network | not published to host |
+| Generated-code containers | Ephemeral Docker runtime | no network or host port |
 
 Ollama runs natively on Apple Silicon so it can use Metal. PostgreSQL, Qdrant, the API, and frontend run in Docker. The M1 8 GB configuration intentionally permits one loaded model and one concurrent model request.
 
@@ -118,12 +120,14 @@ make status
 curl http://localhost:8000/api/v1/readiness
 ```
 
-`make up` builds the ARM64-compatible containers, starts PostgreSQL and Qdrant, applies all Alembic migrations automatically, and starts the API and frontend. A successful readiness response reports PostgreSQL, Qdrant, and Ollama as `ready`.
+`make up` builds the ARM64-compatible containers, including the Day 4 sandbox runtime, starts PostgreSQL and Qdrant, applies all Alembic migrations automatically, and starts the API and frontend. A successful readiness response reports PostgreSQL, Qdrant, and Ollama as `ready`.
 
 Open:
 
 - Application: <http://localhost:3000>
 - Knowledge workflow: <http://localhost:3000/knowledge>
+- Agent Workbench: <http://localhost:3000/workbench>
+- Persistent execution trace: <http://localhost:3000/trace>
 - API documentation: <http://localhost:8000/docs>
 
 ### 7. Verify the installed system
@@ -140,6 +144,10 @@ How do I safely isolate pump P-101 before maintenance?
 ```
 
 The result should cite `pump-maintenance-sop.md`, page 1.
+
+For the Day 3 governed-agent smoke test, open the Workbench, enter an approval outcome, and select **Run sovereign agent**. The UI should progress through durable classification, routing, evidence/model, artifact, and completion steps. A successful run shows `VERIFIED LOCAL`, a downloadable validated DOCX, and a corresponding entry in the Trace screen.
+
+For the Day 4 coding smoke test, upload `demo/day4-coding/day4-broken-repository.zip` in Workbench, select **Coding agent** and `pytest -q`, and ask the agent to fix the `add` defect with the smallest safe change. The baseline must fail, the no-network probe must pass, the patched tests must pass, and the result must provide a patch, verified repository ZIP, and sandbox JSON report.
 
 ## Normal startup on the second and later days
 
@@ -264,6 +272,9 @@ This repository is the complete SovereignForge prototype source of truth. It con
 ai-agentic-flow/
 ├── frontend/          Next.js web application and browser-facing workflows
 ├── backend/           FastAPI API, domain services, migrations, and tests
+├── sandbox-image/     non-root, no-network generated-code runtime image
+├── sandbox-runner/    internal Docker controller and hard resource policies
+├── demo/              versioned workflow fixtures, including the broken Day 4 repository
 ├── demo-data/         safe, deterministic files for demonstrations
 ├── docs/              architecture, requirements, plans, and runbooks
 ├── docker-compose.yml local application and data-service orchestration
@@ -291,7 +302,7 @@ The repository itself does not contain passwords, downloaded models, database co
 | Tesseract OCR | Recover text from scanned PDF pages and uploaded images |
 | Ollama | Run local language and embedding models without a cloud AI provider |
 | Qdrant | Store embedding vectors and perform filtered semantic similarity search |
-| Docker Compose | Connect and supervise the frontend, API, PostgreSQL, and Qdrant services |
+| Docker Compose | Connect and supervise the frontend, API, data services, and isolated sandbox controller |
 | Colima or Docker Desktop | Provide the local Linux container engine on macOS |
 | Ruff, mypy, ESLint, TypeScript, Pytest, and Vitest | Enforce code quality and catch regressions |
 | Playwright | Verify the real browser interface and frontend-to-API behavior |
