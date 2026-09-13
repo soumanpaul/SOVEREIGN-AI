@@ -36,8 +36,12 @@ function activeAgentMessage(status: AgentTask["status"] | undefined, lastStepKin
     detail: "Matching task requirements against locally registered capabilities.",
   };
   if (lastStepKind === "routing") return {
-    title: taskType === "coding" ? "Isolating the repository" : "Gathering permitted evidence",
-    detail: taskType === "coding" ? "Copying only selected source files into a run-scoped working tree." : "Reading selected files and searching selected knowledge indexes.",
+    title: taskType === "coding" ? "Isolating the repository" : taskType === "procurement" ? "Normalizing quotation evidence" : "Gathering permitted evidence",
+    detail: taskType === "coding" ? "Copying only selected source files into a run-scoped working tree." : taskType === "procurement" ? "Combining quotation text, OCR, visual evidence, and policy context." : "Reading selected files and searching selected knowledge indexes.",
+  };
+  if (lastStepKind === "multimodal") return {
+    title: "Comparing grounded evidence",
+    detail: "Validating quotation rows, policy constraints, totals, and compliance exceptions.",
   };
   if (lastStepKind === "repository") return {
     title: "Proving the sandbox boundary",
@@ -72,7 +76,7 @@ function activeAgentMessage(status: AgentTask["status"] | undefined, lastStepKin
 export function Workbench() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("Review the available local context and prepare a concise approval recommendation with safety caveats.");
-  const [taskMode, setTaskMode] = useState<"document" | "coding">("document");
+  const [taskMode, setTaskMode] = useState<"document" | "coding" | "procurement">("document");
   const [testCommand, setTestCommand] = useState<"pytest" | "unittest" | "compile">("pytest");
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
@@ -127,7 +131,7 @@ export function Workbench() {
         knowledge_base_ids: taskMode === "coding" ? [] : [...selectedKnowledgeBaseIds],
         mode: taskMode,
         test_command: testCommand,
-        requested_outputs: taskMode === "coding" ? ["patch", "repository", "sandbox_report"] : ["docx"],
+        requested_outputs: taskMode === "coding" ? ["patch", "repository", "sandbox_report"] : taskMode === "procurement" ? ["xlsx", "docx"] : ["docx"],
       }),
     }),
     onSuccess: (accepted) => setActiveTaskId(accepted.task_id),
@@ -211,10 +215,10 @@ export function Workbench() {
       <section className="panel task">
         <Head n="02" label="TASK" title="Describe the outcome" action={<Badge tone="blue">{selectedFileIds.size} OF {files.length} SELECTED</Badge>} />
         <textarea value={prompt} maxLength={8000} onChange={(event) => setPrompt(event.target.value)} />
-        <div className="task-options"><label><span>WORKFLOW</span><select value={taskMode} onChange={(event) => { const mode = event.target.value as "document" | "coding"; setTaskMode(mode); if (mode === "coding") { setSelectedKnowledgeBaseIds(new Set()); setSelectedFileIds(new Set(files.filter(isCodingInput).map((file) => file.id))); setPrompt((current) => current ? current : "Fix the defect in this repository and verify the complete test suite."); } }}><option value="document">Document agent</option><option value="coding">Coding agent</option></select></label>{taskMode === "coding" && <label><span>VERIFICATION</span><select value={testCommand} onChange={(event) => setTestCommand(event.target.value as "pytest" | "unittest" | "compile")}><option value="pytest">pytest -q</option><option value="unittest">unittest discover</option><option value="compile">compileall</option></select></label>}<Badge tone={taskMode === "coding" ? "amber" : "green"}>{taskMode === "coding" ? "NO-NETWORK SANDBOX" : "GROUNDED LOCAL"}</Badge></div>
+        <div className="task-options"><label><span>WORKFLOW</span><select value={taskMode} onChange={(event) => { const mode = event.target.value as "document" | "coding" | "procurement"; setTaskMode(mode); if (mode === "coding") { setSelectedKnowledgeBaseIds(new Set()); setSelectedFileIds(new Set(files.filter(isCodingInput).map((file) => file.id))); setPrompt("Fix the defect in this repository and verify the complete test suite."); } else if (mode === "procurement") { setSelectedFileIds(new Set(files.filter((file) => !isCodingInput(file) || /\.(csv|md|txt|json)$/i.test(file.display_name)).map((file) => file.id))); setPrompt("Compare the vendor quotations against the procurement policy and prepare a governed award recommendation."); } else { setPrompt("Review the available local context and prepare a concise approval recommendation with safety caveats."); } }}><option value="document">Document agent</option><option value="coding">Coding agent</option><option value="procurement">Procurement agent</option></select></label>{taskMode === "coding" && <label><span>VERIFICATION</span><select value={testCommand} onChange={(event) => setTestCommand(event.target.value as "pytest" | "unittest" | "compile")}><option value="pytest">pytest -q</option><option value="unittest">unittest discover</option><option value="compile">compileall</option></select></label>}<Badge tone={taskMode === "coding" ? "amber" : "green"}>{taskMode === "coding" ? "NO-NETWORK SANDBOX" : taskMode === "procurement" ? "XLSX + DOCX" : "GROUNDED LOCAL"}</Badge></div>
         <div className="hints"><span><Sparkles size={14} /> Bounded local agent</span><span><LockKeyhole size={14} /> Organization scoped</span></div>
         <div className="router"><i><Eye size={18} /></i><div><small>DETERMINISTIC ROUTING</small><b>{task?.task_type ? `${task.task_type.replaceAll("_", " ")} task` : "Capability-based route"}</b><span>{run?.agent_profile?.replaceAll("_", " ") ?? "Classified after submission"}</span></div><ArrowRight size={17} /><div className="model"><i>AI</i><span><small>SELECTED MODEL</small><b>{modelName}</b></span></div></div>
-        <button className="run" onClick={() => submit.mutate()} disabled={submit.isPending || isTaskActive(task?.status) || !workspaceId || !prompt.trim() || (taskMode === "coding" && selectedFileIds.size === 0)}><Play size={15} fill="currentColor" />{isTaskActive(task?.status) || submit.isPending ? "Executing locally…" : taskMode === "coding" && selectedFileIds.size === 0 ? "Select repository files" : "Run sovereign agent"}<kbd>LOCAL</kbd></button>
+        <button className="run" onClick={() => submit.mutate()} disabled={submit.isPending || isTaskActive(task?.status) || !workspaceId || !prompt.trim() || ((taskMode === "coding" || taskMode === "procurement") && selectedFileIds.size === 0)}><Play size={15} fill="currentColor" />{isTaskActive(task?.status) || submit.isPending ? "Executing locally…" : taskMode === "coding" && selectedFileIds.size === 0 ? "Select repository files" : taskMode === "procurement" && selectedFileIds.size === 0 ? "Select quotation files" : "Run sovereign agent"}<kbd>LOCAL</kbd></button>
         {isTaskActive(task?.status) && <button className="trace-link" onClick={() => cancel.mutate()} disabled={cancel.isPending}>Cancel safely</button>}
       </section>
       <section className="panel execution">

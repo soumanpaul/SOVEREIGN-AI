@@ -10,12 +10,29 @@ from app.documents.types import NormalizedPage
 
 
 def extract_pages(
-    path: Path, media_type: str, max_pages: int, ocr_threshold: int
+    path: Path,
+    media_type: str,
+    max_pages: int,
+    ocr_threshold: int,
+    max_image_pixels: int = 25_000_000,
 ) -> tuple[list[NormalizedPage], list[str]]:
     if media_type == "application/pdf":
-        return _extract_pdf(path, max_pages, ocr_threshold)
+        return _extract_pdf(path, max_pages, ocr_threshold, max_image_pixels)
     if media_type.startswith("image/"):
-        text = pytesseract.image_to_string(Image.open(path)).strip()
+        try:
+            with Image.open(path) as image:
+                if image.width * image.height > max_image_pixels:
+                    raise AppError(
+                        "IMAGE_PIXEL_LIMIT",
+                        f"Images are limited to {max_image_pixels:,} pixels.",
+                        413,
+                    )
+                image.load()
+                text = pytesseract.image_to_string(image).strip()
+        except AppError:
+            raise
+        except Exception as exc:
+            raise AppError("INVALID_IMAGE", "The uploaded image could not be opened.", 422) from exc
         return [NormalizedPage(1, text, "ocr")], ([] if text else ["OCR produced no text"])
     try:
         text = path.read_text(encoding="utf-8")
@@ -29,7 +46,7 @@ def extract_pages(
 
 
 def _extract_pdf(
-    path: Path, max_pages: int, ocr_threshold: int
+    path: Path, max_pages: int, ocr_threshold: int, max_image_pixels: int
 ) -> tuple[list[NormalizedPage], list[str]]:
     pages: list[NormalizedPage] = []
     warnings: list[str] = []
@@ -44,6 +61,13 @@ def _extract_pdf(
             text = page.get_text("text").strip()
             method = "native"
             if len(text) < ocr_threshold:
+                rendered_pixels = int(page.rect.width * 1.5 * page.rect.height * 1.5)
+                if rendered_pixels > max_image_pixels:
+                    raise AppError(
+                        "PDF_PIXEL_LIMIT",
+                        "A rendered PDF page exceeds the configured pixel limit.",
+                        413,
+                    )
                 pixmap = page.get_pixmap(matrix=pymupdf.Matrix(1.5, 1.5), alpha=False)
                 image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
                 ocr_text = pytesseract.image_to_string(image).strip()

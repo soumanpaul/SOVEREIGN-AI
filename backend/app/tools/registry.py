@@ -241,9 +241,20 @@ class RunPythonTestsTool:
 
 class ToolRegistry:
     permissions = {
-        "general_agent": {"read_file", "create_docx"},
-        "document_agent": {"read_file", "search_knowledge", "create_docx"},
-        "procurement_agent": {"read_file", "search_knowledge", "create_docx"},
+        "general_agent": {"read_file", "create_docx", "analyze_visual_pages"},
+        "document_agent": {
+            "read_file",
+            "search_knowledge",
+            "create_docx",
+            "analyze_visual_pages",
+        },
+        "procurement_agent": {
+            "read_file",
+            "search_knowledge",
+            "create_docx",
+            "create_xlsx",
+            "analyze_visual_pages",
+        },
         "coding_agent": {
             "read_repository",
             "search_files",

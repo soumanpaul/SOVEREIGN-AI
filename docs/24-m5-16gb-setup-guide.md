@@ -150,7 +150,12 @@ ollama list
   ollama run gemma3:4b "Reply with exactly: MODEL READY"
   ollama run mistral:7b-instruct "Reply with exactly: MODEL READY"
 
-  Check which model is loaded:  
+  Check which model is loaded:
+
+llama ps
+
+  Because this project starts Ollama with OLLAMA_MAX_LOADED_MODELS=1, Ollama unloads the previous model when another model needs the memory. All three can remain stored on disk
+  without remaining loaded simultaneously.    
 
 Expected model keys include:
 

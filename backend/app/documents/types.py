@@ -6,6 +6,7 @@ class NormalizedPage:
     number: int
     text: str
     extraction_method: str
+    visual_context: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

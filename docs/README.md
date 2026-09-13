@@ -1,6 +1,6 @@
 # SovereignForge Engineering Plan
 
-Status: Day 4 prototype complete
+Status: Day 5 prototype complete
 Target: seven-day prototype  
 Source brief: [`../details.md`](../details.md)
 
@@ -35,6 +35,7 @@ This folder is the implementation source of truth for **SovereignForge**, an on-
 | [23-scaling-and-capacity-plan.md](23-scaling-and-capacity-plan.md) | Current concurrency limits, latency and throughput metrics, ten-user architecture, load tests, and phased scaling plan | Architects, backend, DevOps, QA |
 | [24-m5-16gb-setup-guide.md](24-m5-16gb-setup-guide.md) | Exact installation, model, startup, registration, verification, and daily-use commands for an M5 Mac with 16 GB unified memory | Developers, operators |
 | [24-day-4-build-record.md](24-day-4-build-record.md) | Governed coding mode, sandbox boundaries, patch validation, artifacts, and acceptance evidence | Lead, developers, security, QA |
+| [25-day-5-build-record.md](25-day-5-build-record.md) | Multimodal evidence, procurement comparison, validated XLSX/DOCX artifacts, and acceptance evidence | Lead, developers, security, QA |
 
 ## Working rules
 

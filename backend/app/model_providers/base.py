@@ -9,6 +9,7 @@ class ChatRequest:
     keep_alive: str
     seed: int = 42
     temperature: float = 0.2
+    images: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

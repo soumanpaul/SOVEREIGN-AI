@@ -40,11 +40,14 @@ class OllamaModelProvider:
         )
 
     async def chat(self, request: ChatRequest) -> ChatResult:
+        message: dict[str, Any] = {"role": "user", "content": request.prompt}
+        if request.images:
+            message["images"] = list(request.images)
         payload: dict[str, Any] = {
             "model": request.model_key,
             "stream": False,
             "keep_alive": request.keep_alive,
-            "messages": [{"role": "user", "content": request.prompt}],
+            "messages": [message],
             "options": {"temperature": request.temperature, "seed": request.seed},
         }
         started = time.perf_counter()

@@ -22,6 +22,29 @@ async def test_chat_maps_local_ollama_response(monkeypatch: pytest.MonkeyPatch) 
 
 
 @pytest.mark.asyncio
+async def test_chat_sends_images_only_for_multimodal_requests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_post(*_: object, **kwargs: object) -> httpx.Response:
+        captured.update(kwargs["json"])  # type: ignore[arg-type]
+        request = httpx.Request("POST", "http://ollama/api/chat")
+        return httpx.Response(200, request=request, json={"message": {"content": "Valve open"}})
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+    provider = OllamaModelProvider("http://ollama")
+
+    await provider.chat(
+        ChatRequest("vision-model", "Inspect", "2m", images=("aW1hZ2U=",))
+    )
+
+    messages = captured["messages"]
+    assert isinstance(messages, list)
+    assert messages[0]["images"] == ["aW1hZ2U="]
+
+
+@pytest.mark.asyncio
 async def test_chat_returns_safe_error_when_ollama_is_unreachable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

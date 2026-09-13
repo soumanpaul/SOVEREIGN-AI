@@ -67,3 +67,4 @@ ollama-models:
 	ollama pull qwen3:1.7b
 	ollama pull qwen2.5-coder:1.5b
 	ollama pull nomic-embed-text
+	ollama pull gemma3:4b

@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img alt="Prototype status" src="https://img.shields.io/badge/status-Day%204%20prototype-16a34a" />
+  <img alt="Prototype status" src="https://img.shields.io/badge/status-Day%205%20prototype-16a34a" />
   <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
   <img alt="Node.js 22+" src="https://img.shields.io/badge/Node.js-22%2B-339933?logo=nodedotjs&logoColor=white" />
   <img alt="Local AI with Ollama" src="https://img.shields.io/badge/AI-local%20via%20Ollama-111827" />
@@ -56,7 +56,8 @@ SOVEREIGN-AI treats those concerns as product capabilities rather than deploymen
 | Network-disabled coding sandbox | Available | Ephemeral non-root containers, fixed commands, limits, active egress probe |
 | DOCX artifact pipeline | Available | Markdown-aware generated document, validation, checksum, and trademark footer |
 | Coding artifacts | Available | Verified patch, repository ZIP, and sandbox evidence JSON |
-| XLSX artifact pipeline | Planned | Procurement template and validation remain Day 5 scope |
+| Multimodal evidence pipeline | Available | OCR plus local vision analysis, normalized page evidence, and explicit fallback trace |
+| XLSX artifact pipeline | Available | Formula-backed procurement workbook, structural validation, checksum, and trace |
 | Sovereignty Center and egress proof | Planned | Evidence model and negative security tests are specified |
 
 ## Target workflows
@@ -65,7 +66,7 @@ SOVEREIGN-AI treats those concerns as product capabilities rather than deploymen
 2. **Safe coding agent** — diagnose supplied code, propose a patch, and verify it inside an ephemeral network-disabled sandbox.
 3. **Procurement decision support** — compare quotations against policy and produce traceable XLSX/DOCX decision artifacts.
 
-The inspection/document and safe-coding paths are implemented through Day 4. Procurement and XLSX output remain Day 5 scope.
+The inspection, safe-coding, and procurement paths are implemented through Day 5.
 
 ## Architecture
 
@@ -177,7 +178,7 @@ curl http://localhost:8000/api/v1/health
 curl http://localhost:8000/api/v1/readiness
 ```
 
-The recorded Day 4 build additionally passed a real browser coding run: failed baseline tests, active no-network proof, a local-model patch applied to an isolated working copy, passing sandbox tests, three downloaded artifacts, and cleanup with no residual sandbox container or volume. See the [Day 4 Build Record](docs/24-day-4-build-record.md).
+The recorded workflow builds include end-to-end local acceptance evidence for the safe-coding and procurement paths. See the [Day 4 Build Record](docs/24-day-4-build-record.md) and [Day 5 Build Record](docs/25-day-5-build-record.md).
 
 ## API overview
 
@@ -254,7 +255,7 @@ Start with the [Engineering Plan](docs/README.md), which indexes the complete sp
 - **Day 2 — complete:** secure ingestion, PDF/OCR extraction, versioned Qdrant indexing, and cited retrieval.
 - **Day 3 — complete:** durable task state, deterministic routing, governed agent loop, hybrid evidence, DOCX, and trace events.
 - **Day 4 — complete:** coding route, secure repository intake, network-disabled sandbox verification, retries, and code artifacts.
-- **Day 5:** DOCX/XLSX artifacts and procurement workflow.
+- **Day 5 — complete:** multimodal evidence normalization, procurement comparison, and validated DOCX/XLSX artifacts.
 - **Day 6:** audit, sovereignty evidence, and negative security tests.
 - **Day 7:** evaluation, offline rehearsal, packaging, and submission evidence.
 

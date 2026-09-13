@@ -27,18 +27,25 @@ def classify_task(
 ) -> Classification:
     normalized = goal.casefold()
     coding = any(word in normalized for word in ("code", "bug", "fix", "test", "repository"))
-    spreadsheet = any(
-        word in normalized for word in ("spreadsheet", "quotation", "vendor", "compare")
+    spreadsheet = requested_mode == "procurement" or any(
+        word in normalized
+        for word in ("spreadsheet", "quotation", "procurement", "vendor", "compare bids")
     )
     document = has_files or any(word in normalized for word in ("document", "pdf", "inspection"))
     rag = has_knowledge or any(
         word in normalized for word in ("policy", "sop", "manual", "knowledge")
     )
-    if requested_mode == "coding" or coding:
+    if requested_mode == "coding":
+        return Classification("coding", ["text", "coding"], "coding_agent", ["coding intent"])
+    if requested_mode == "procurement":
+        return Classification(
+            "procurement", ["text", "reasoning"], "procurement_agent", ["procurement intent"]
+        )
+    if coding:
         return Classification("coding", ["text", "coding"], "coding_agent", ["coding intent"])
     if spreadsheet:
         return Classification(
-            "spreadsheet", ["text", "reasoning"], "procurement_agent", ["comparison intent"]
+            "procurement", ["text", "reasoning"], "procurement_agent", ["procurement intent"]
         )
     if rag:
         return Classification(
@@ -65,6 +72,11 @@ async def route_model(
     selected: RegisteredModel | None = None
     for candidate in candidates:
         missing = sorted(set(classification.capabilities) - set(candidate.capabilities))
+        reserved_for_vision = (
+            "vision" in candidate.capabilities
+            and "vision" not in classification.capabilities
+            and "coding" not in classification.capabilities
+        )
         record: dict[str, object] = {
             "model_id": str(candidate.id),
             "model_key": candidate.model_key,
@@ -72,7 +84,9 @@ async def route_model(
             "missing_capabilities": missing,
             "eligible": False,
         }
-        if not missing:
+        if reserved_for_vision:
+            record["exclusion_reason"] = "reserved for visual preprocessing"
+        elif not missing:
             health = await provider.health(candidate.model_key)
             record["health"] = "ready" if health.ready else "unavailable"
             record["latency_ms"] = health.latency_ms

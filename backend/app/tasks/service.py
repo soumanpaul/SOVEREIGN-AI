@@ -47,6 +47,20 @@ def validate_inputs(session: Session, payload: TaskCreate, user: User) -> None:
         raise AppError(
             "CODING_KNOWLEDGE_DENIED", "Coding mode does not accept knowledge bases.", 422
         )
+    if payload.mode == "procurement" and not payload.input_file_ids:
+        raise AppError(
+            "PROCUREMENT_INPUT_REQUIRED",
+            "Procurement mode requires at least one quotation file.",
+            422,
+        )
+    if payload.mode == "procurement" and not {"xlsx", "docx"}.issubset(
+        payload.requested_outputs
+    ):
+        raise AppError(
+            "PROCUREMENT_ARTIFACTS_REQUIRED",
+            "Procurement mode requires validated XLSX and DOCX outputs.",
+            422,
+        )
     files = list(
         session.scalars(select(StoredFile).where(StoredFile.id.in_(payload.input_file_ids)))
     )

@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     max_upload_bytes: int = Field(default=20 * 1024 * 1024, ge=1024)
     max_pdf_pages: int = Field(default=100, ge=1, le=500)
     ocr_text_threshold: int = Field(default=40, ge=0)
+    vision_max_pages_per_task: int = Field(default=4, ge=1, le=20)
+    vision_render_dpi: int = Field(default=144, ge=72, le=216)
+    max_image_pixels: int = Field(default=25_000_000, ge=1_000_000, le=100_000_000)
     qdrant_collection: str = "sovereignforge_chunks"
     chunk_size_chars: int = Field(default=2800, ge=500)
     chunk_overlap_chars: int = Field(default=400, ge=0)

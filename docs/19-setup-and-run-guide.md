@@ -96,7 +96,7 @@ make ollama-serve
 
 Leave this terminal running. If the Ollama macOS application already owns port `11434`, do not start a second server; confirm it is available with `curl http://localhost:11434/api/tags`.
 
-In terminal 2, download the three prototype models once:
+In terminal 2, download the four prototype models once:
 
 ```bash
 make ollama-models
@@ -107,6 +107,7 @@ This installs:
 - `qwen3:1.7b` for general reasoning
 - `qwen2.5-coder:1.5b` for coding
 - `nomic-embed-text` for document embeddings
+- `gemma3:4b` for local image and scanned-page analysis
 
 Model downloads are not repeated during normal application startup.
 
@@ -148,6 +149,13 @@ The result should cite `pump-maintenance-sop.md`, page 1.
 For the Day 3 governed-agent smoke test, open the Workbench, enter an approval outcome, and select **Run sovereign agent**. The UI should progress through durable classification, routing, evidence/model, artifact, and completion steps. A successful run shows `VERIFIED LOCAL`, a downloadable validated DOCX, and a corresponding entry in the Trace screen.
 
 For the Day 4 coding smoke test, upload `demo/day4-coding/day4-broken-repository.zip` in Workbench, select **Coding agent** and `pytest -q`, and ask the agent to fix the `add` defect with the smallest safe change. The baseline must fail, the no-network probe must pass, the patched tests must pass, and the result must provide a patch, verified repository ZIP, and sandbox JSON report.
+
+For the Day 5 procurement smoke test, upload
+`demo/day5-procurement/quotations-v1.csv` and
+`demo/day5-procurement/procurement-policy-v1.md` together, select
+**Procurement agent**, and run the prefilled request. The result must recommend
+Aravind Industrial subject to human approval, flag Beacon Controls, and publish
+validated XLSX and DOCX downloads.
 
 ## Normal startup on the second and later days
 

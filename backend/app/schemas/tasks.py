@@ -9,11 +9,13 @@ class TaskCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     workspace_id: UUID
     goal: str = Field(min_length=3, max_length=8_000)
-    mode: Literal["auto", "document", "coding"] = "auto"
+    mode: Literal["auto", "document", "coding", "procurement"] = "auto"
     test_command: Literal["pytest", "unittest", "compile"] = "pytest"
     input_file_ids: list[UUID] = Field(default_factory=list, max_length=20)
     knowledge_base_ids: list[UUID] = Field(default_factory=list, max_length=10)
-    requested_outputs: list[Literal["docx", "patch", "repository", "sandbox_report"]] = Field(
+    requested_outputs: list[
+        Literal["docx", "xlsx", "patch", "repository", "sandbox_report"]
+    ] = Field(
         default_factory=list, max_length=3
     )
 

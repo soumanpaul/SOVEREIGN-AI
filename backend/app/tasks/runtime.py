@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.artifacts.code import publish_code_artifacts
 from app.artifacts.docx import create_approval_docx
+from app.artifacts.procurement import create_procurement_artifacts
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.db.models import (
@@ -40,6 +41,8 @@ from app.services.code_repository import (
     snapshot_repository,
 )
 from app.services.hybrid_retrieval import gather_hybrid_evidence
+from app.services.multimodal import enrich_multimodal_inputs
+from app.services.procurement import compare_procurement, comparison_markdown
 from app.services.sandbox_client import SandboxClient
 from app.tools.registry import ToolContext, ToolRegistry
 
@@ -768,6 +771,64 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
         evidence: list[dict[str, Any]] = []
         citations: list[dict[str, object]] = []
         if task.input_file_ids:
+            registry.authorize(run.agent_profile, "analyze_visual_pages")
+            add_audit(
+                session,
+                task,
+                run,
+                "TOOL_ALLOWED",
+                {"tool": "analyze_visual_pages"},
+            )
+            session.commit()
+            multimodal = await asyncio.wait_for(
+                enrich_multimodal_inputs(
+                    session,
+                    task.workspace_id,
+                    task.input_file_ids,
+                    task.goal,
+                    provider,
+                    settings,
+                ),
+                timeout=settings.task_evidence_timeout_seconds,
+            )
+            if multimodal.candidate_pages or multimodal.ocr_pages:
+                detail = (
+                    f"{multimodal.vision_pages} visual pages analyzed with "
+                    f"{multimodal.vision_model}."
+                    if multimodal.vision_model
+                    else f"{multimodal.ocr_pages} pages processed with OCR fallback."
+                )
+                add_step(
+                    session,
+                    run,
+                    "multimodal",
+                    "Multimodal evidence normalized",
+                    detail,
+                    tool_name="analyze_visual_pages",
+                    output_data={
+                        "candidate_pages": multimodal.candidate_pages,
+                        "vision_pages": multimodal.vision_pages,
+                        "ocr_pages": multimodal.ocr_pages,
+                        "vision_model": multimodal.vision_model,
+                        "warnings": multimodal.warnings,
+                    },
+                    duration_ms=multimodal.duration_ms,
+                )
+                add_audit(
+                    session,
+                    task,
+                    run,
+                    "MULTIMODAL_EVIDENCE_NORMALIZED",
+                    {
+                        "vision_model": multimodal.vision_model,
+                        "vision_pages": multimodal.vision_pages,
+                        "ocr_pages": multimodal.ocr_pages,
+                        "warnings": multimodal.warnings,
+                    },
+                )
+                session.commit()
+                check_run(session, task, run)
+        if task.input_file_ids:
             registry.authorize(run.agent_profile, "read_file")
             add_audit(
                 session,
@@ -875,7 +936,25 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
         session.commit()
         check_run(session, task, run)
 
+        procurement = (
+            compare_procurement(evidence)
+            if classification.task_type == "procurement"
+            else None
+        )
+        if procurement and not {"xlsx", "docx"}.issubset(task.requested_outputs):
+            raise AppError(
+                "PROCUREMENT_ARTIFACTS_REQUIRED",
+                "Procurement tasks require validated XLSX and DOCX outputs.",
+                422,
+            )
         prompt = grounded_prompt(task.goal, evidence)
+        if procurement:
+            prompt += (
+                "\n\nVALIDATED PROCUREMENT COMPARISON:\n"
+                + procurement.model_dump_json(indent=2)
+                + "\n\nProvide brief review notes only. Do not change the computed totals, "
+                "compliance results, or recommended vendor."
+            )
         started = time.perf_counter()
         result_text: str | None = None
         for attempt in range(settings.task_max_retries + 1):
@@ -899,20 +978,110 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
             )
             if "[S" not in result_text:
                 result_text += f"\n\nSources: {source_line}"
+        if procurement:
+            # The model may surface review notes, but it cannot author the governed
+            # procurement decision or weaken mandatory approval controls.
+            result_text = comparison_markdown(procurement)
         run.result_text = result_text
         add_step(
             session,
             run,
             "model",
             "Grounded response generated",
-            f"{decision.model.model_key} produced a validated local response.",
+            (
+                "A deterministic validator composed the governed procurement result after "
+                f"{decision.model.model_key} completed its bounded review."
+                if procurement
+                else f"{decision.model.model_key} produced a validated local response."
+            ),
             input_data={"prompt_chars": len(prompt), "evidence_count": len(evidence)},
             output_data={"response_chars": len(result_text), "citation_count": len(citations)},
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
         check_run(session, task, run)
 
-        if "docx" in task.requested_outputs:
+        if procurement and {"docx", "xlsx"} & set(task.requested_outputs):
+            registry.authorize(run.agent_profile, "create_xlsx")
+            registry.authorize(run.agent_profile, "create_docx")
+            add_audit(
+                session,
+                task,
+                run,
+                "TOOL_ALLOWED",
+                {"tools": ["create_xlsx", "create_docx"]},
+            )
+            started = time.perf_counter()
+            organization_name = (
+                session.scalar(
+                    select(Organization.name)
+                    .join(User, User.organization_id == Organization.id)
+                    .where(User.id == task.created_by_user_id)
+                )
+                or "Organization"
+            )
+            published_items = await asyncio.wait_for(
+                asyncio.to_thread(
+                    create_procurement_artifacts,
+                    settings.data_root,
+                    task.workspace_id,
+                    run.id,
+                    task.goal,
+                    procurement,
+                    citations,
+                    organization_name,
+                ),
+                timeout=settings.tool_timeout_seconds,
+            )
+            for procurement_artifact in published_items:
+                session.add(
+                    Artifact(
+                        workspace_id=task.workspace_id,
+                        run_id=run.id,
+                        logical_name=procurement_artifact.logical_name,
+                        revision=1,
+                        display_name=procurement_artifact.display_name,
+                        storage_key=procurement_artifact.storage_key,
+                        media_type=procurement_artifact.media_type,
+                        size_bytes=procurement_artifact.size_bytes,
+                        sha256=procurement_artifact.sha256,
+                        validation_status="valid",
+                    )
+                )
+            add_step(
+                session,
+                run,
+                "artifact",
+                "Procurement artifacts published",
+                "Validated XLSX comparison and DOCX recommendation were published atomically.",
+                tool_name="create_xlsx",
+                input_data={
+                    "quotation_lines": len(procurement.lines),
+                    "vendors": len(procurement.vendors),
+                },
+                output_data={
+                    "artifacts": [
+                        {
+                            "logical_name": item.logical_name,
+                            "sha256": item.sha256,
+                        }
+                        for item in published_items
+                    ],
+                    "recommended_vendor": procurement.recommended_vendor,
+                },
+                duration_ms=int((time.perf_counter() - started) * 1000),
+            )
+            add_audit(
+                session,
+                task,
+                run,
+                "PROCUREMENT_ARTIFACTS_PUBLISHED",
+                {
+                    "artifact_count": len(published_items),
+                    "recommended_vendor": procurement.recommended_vendor,
+                },
+            )
+            session.commit()
+        elif "docx" in task.requested_outputs:
             registry.authorize(run.agent_profile, "create_docx")
             add_audit(session, task, run, "TOOL_ALLOWED", {"tool": "create_docx"})
             started = time.perf_counter()
@@ -984,7 +1153,11 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
             task,
             run,
             "TASK_COMPLETED",
-            {"step_count": run.step_count, "artifact_requested": "docx" in task.requested_outputs},
+            {
+                "step_count": run.step_count,
+                "workflow": classification.task_type,
+                "requested_outputs": task.requested_outputs,
+            },
         )
         session.commit()
         add_step(

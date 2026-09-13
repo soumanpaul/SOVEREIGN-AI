@@ -59,7 +59,7 @@ Exit: one prompt routes, retrieves, generates and validates an approval DOCX aut
 
 Exit: known defect is patched in working copy and all fixed tests pass with evidence.
 
-### Day 5: multimodal and procurement
+### Day 5: multimodal and procurement — completed 2026-09-14
 
 - Image/scanned-page processing and normalized evidence merge.
 - Procurement extraction schema, policy comparison, XLSX and DOCX templates.

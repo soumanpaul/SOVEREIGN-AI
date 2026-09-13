@@ -27,6 +27,9 @@ def load_normalized_pages(settings: Settings, document: Document) -> list[Normal
             number=int(page["number"]),
             text=str(page["text"]),
             extraction_method=str(page["extraction_method"]),
+            visual_context=(
+                str(page["visual_context"]) if page.get("visual_context") else None
+            ),
         )
         for page in payload
     ]
@@ -49,14 +52,43 @@ async def ensure_document_extracted(
         stored.media_type,
         settings.max_pdf_pages,
         settings.ocr_text_threshold,
+        settings.max_image_pixels,
     )
     if not any(page.text.strip() for page in pages):
-        raise AppError(
-            "NO_EXTRACTABLE_TEXT",
-            f"No text could be extracted from {stored.display_name}.",
-            422,
-        )
+        if stored.media_type == "application/pdf" or stored.media_type.startswith("image/"):
+            pages = [
+                NormalizedPage(
+                    page.number,
+                    "[No OCR text detected on this page.]",
+                    page.extraction_method,
+                )
+                for page in pages
+            ]
+            warnings.append("No OCR text was detected; local vision analysis may add context")
+        else:
+            raise AppError(
+                "NO_EXTRACTABLE_TEXT",
+                f"No text could be extracted from {stored.display_name}.",
+                422,
+            )
 
+    normalized_key = save_normalized_pages(settings, stored, document, pages)
+
+    document.page_count = len(pages)
+    document.extraction_status = "completed"
+    document.normalized_path = normalized_key
+    document.warnings = warnings
+    document.updated_at = datetime.now(UTC)
+    session.commit()
+    return document, pages
+
+
+def save_normalized_pages(
+    settings: Settings,
+    stored: StoredFile,
+    document: Document,
+    pages: list[NormalizedPage],
+) -> str:
     normalized_key = f"workspaces/{stored.workspace_id}/extracted/{document.id}/pages.json"
     normalized_path = resolve_storage_key(settings.data_root, normalized_key)
     normalized_path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,11 +102,4 @@ async def ensure_document_extracted(
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
-
-    document.page_count = len(pages)
-    document.extraction_status = "completed"
-    document.normalized_path = normalized_key
-    document.warnings = warnings
-    document.updated_at = datetime.now(UTC)
-    session.commit()
-    return document, pages
+    return normalized_key

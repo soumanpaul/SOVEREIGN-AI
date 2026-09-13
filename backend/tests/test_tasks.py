@@ -24,7 +24,7 @@ from app.db.models import (
 )
 from app.model_providers.base import EmbeddingResult
 from app.model_providers.ollama import OllamaModelProvider
-from app.routing.router import classify_task
+from app.routing.router import Classification, classify_task, route_model
 from app.schemas.common import ModelCreate
 from app.schemas.tasks import TaskCreate
 from app.services.hybrid_retrieval import gather_hybrid_evidence
@@ -68,6 +68,15 @@ class FakeEmbeddingProvider:
             for text in texts
         ]
         return EmbeddingResult(vectors=vectors, duration_ms=1)
+
+
+class FakeHealthyProvider:
+    async def health(self, model_key: str) -> object:
+        class Result:
+            ready = True
+            latency_ms = 1
+
+        return Result()
 
 
 class FakeVectorSearch:
@@ -117,6 +126,15 @@ def test_classification_is_deterministic_and_context_aware() -> None:
     assert classify_task("Prepare an approval", False, True).task_type == "rag"
     assert classify_task("Inspect this file", True, False).task_type == "document_analysis"
     assert classify_task("Give a short answer", False, False).task_type == "general"
+    procurement = classify_task(
+        "Prepare an award recommendation", True, False, "procurement"
+    )
+    assert procurement.task_type == "procurement"
+    assert procurement.agent_profile == "procurement_agent"
+    explicit = classify_task(
+        "Compare source-code vendor quotations", True, False, "procurement"
+    )
+    assert explicit.task_type == "procurement"
 
 
 def test_model_registration_persists_capabilities_and_rejects_duplicates(
@@ -137,6 +155,43 @@ def test_model_registration_persists_capabilities_and_rejects_duplicates(
     with pytest.raises(AppError) as duplicate:
         register_model(session, payload)
     assert duplicate.value.code == "MODEL_ALREADY_REGISTERED"
+
+
+@pytest.mark.asyncio
+async def test_vision_preprocessor_cannot_displace_primary_text_model(
+    session: Session,
+) -> None:
+    session.add_all(
+        [
+            RegisteredModel(
+                name="Vision",
+                provider="ollama",
+                model_key="gemma3:4b",
+                capabilities=["text", "reasoning", "general", "vision"],
+                priority=200,
+            ),
+            RegisteredModel(
+                name="General",
+                provider="ollama",
+                model_key="qwen3:1.7b",
+                capabilities=["text", "reasoning", "general"],
+                priority=100,
+            ),
+        ]
+    )
+    session.commit()
+
+    decision = await route_model(
+        session,
+        Classification("general", ["text", "reasoning"], "general_agent", ["default"]),
+        FakeHealthyProvider(),  # type: ignore[arg-type]
+    )
+
+    assert decision.model.model_key == "qwen3:1.7b"
+    vision = next(
+        item for item in decision.data["candidates"] if item["model_key"] == "gemma3:4b"
+    )
+    assert vision["exclusion_reason"] == "reserved for visual preprocessing"
 
 
 def test_disabled_model_remains_listed_but_cannot_be_selected(session: Session) -> None:
