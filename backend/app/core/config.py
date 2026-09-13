@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     task_max_steps: int = Field(default=30, ge=3, le=40)
     task_max_retries: int = Field(default=2, ge=0, le=5)
     task_timeout_seconds: int = Field(default=180, ge=30, le=900)
+    task_worker_poll_seconds: float = Field(default=1.0, ge=0.1, le=10.0)
     tool_timeout_seconds: int = Field(default=30, ge=5, le=120)
     max_tool_output_chars: int = Field(default=12_000, ge=1_000, le=50_000)
     task_direct_read_chars: int = Field(default=10_000, ge=1_000, le=50_000)

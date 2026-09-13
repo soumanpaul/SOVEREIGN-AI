@@ -36,6 +36,8 @@ This folder is the implementation source of truth for **SovereignForge**, an on-
 | [24-m5-16gb-setup-guide.md](24-m5-16gb-setup-guide.md) | Exact installation, model, startup, registration, verification, and daily-use commands for an M5 Mac with 16 GB unified memory | Developers, operators |
 | [24-day-4-build-record.md](24-day-4-build-record.md) | Governed coding mode, sandbox boundaries, patch validation, artifacts, and acceptance evidence | Lead, developers, security, QA |
 | [25-day-5-build-record.md](25-day-5-build-record.md) | Multimodal evidence, procurement comparison, validated XLSX/DOCX artifacts, and acceptance evidence | Lead, developers, security, QA |
+| [sovereign-ai-workbench-flow.png](sovereign-ai-workbench-flow.png) | Draw.io-style UML activity flow for automatic routing, governed execution, validation, audit, and artifacts ([editable SVG](sovereign-ai-workbench-flow.svg)) | Architects, developers, judges |
+| [26-workbench-flowchart-guide.md](26-workbench-flowchart-guide.md) | Stage-by-stage explanation of every activity, decision, branch, control, and terminal state in the UML flowchart | Architects, developers, product, judges |
 
 ## Working rules
 

@@ -5,7 +5,7 @@ import shutil
 import time
 import uuid
 from contextlib import suppress
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -47,6 +47,9 @@ from app.services.sandbox_client import SandboxClient
 from app.tools.registry import ToolContext, ToolRegistry
 
 _worker_lock = asyncio.Lock()
+_worker_wakeup = asyncio.Event()
+_worker_stop = asyncio.Event()
+_worker_event_loop: asyncio.AbstractEventLoop | None = None
 
 
 def _coding_failure_summary(
@@ -110,7 +113,6 @@ def _coding_failure_summary(
             f"Error: {error_line}{guidance}"
         )[:max_chars]
     return combined[-max_chars:]
-_recovery_tasks: set[asyncio.Task[None]] = set()
 TERMINAL = {"completed", "failed", "cancelled", "timed_out"}
 
 
@@ -247,7 +249,7 @@ async def execute_coding_workflow(
     registry: ToolRegistry,
 ) -> None:
     settings = get_settings()
-    if task.knowledge_base_ids:
+    if task.knowledge_base_ids and task.mode == "coding":
         raise AppError(
             "CODING_KNOWLEDGE_DENIED",
             "Coding mode accepts repository files only; deselect knowledge bases.",
@@ -680,6 +682,7 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
             return
         run.status = task.status = "running"
         run.started_at = run.started_at or now()
+        run.deadline_at = run.started_at + timedelta(seconds=settings.task_timeout_seconds)
         task.updated_at = now()
         session.commit()
         check_run(session, task, run)
@@ -1230,9 +1233,62 @@ async def recover_incomplete_runs() -> None:
                 task = session.get(Task, run.task_id)
                 if task:
                     task.status = "queued"
-            recovery = asyncio.create_task(execute_run(run.id))
-            _recovery_tasks.add(recovery)
-            recovery.add_done_callback(_recovery_tasks.discard)
         session.commit()
     finally:
         session.close()
+
+
+def notify_task_worker() -> None:
+    """Wake the local worker after a durable run has been committed."""
+    if _worker_event_loop and _worker_event_loop.is_running():
+        _worker_event_loop.call_soon_threadsafe(_worker_wakeup.set)
+
+
+def _next_queued_run_id() -> uuid.UUID | None:
+    session = SessionLocal()
+    try:
+        return session.scalar(
+            select(TaskRun.id)
+            .where(TaskRun.status == "queued")
+            .order_by(TaskRun.created_at, TaskRun.id)
+            .limit(1)
+        )
+    finally:
+        session.close()
+
+
+async def task_worker_loop() -> None:
+    """Continuously drain the durable FIFO queue with one local executor."""
+    settings = get_settings()
+    while not _worker_stop.is_set():
+        run_id = _next_queued_run_id()
+        if run_id is not None:
+            await execute_run(run_id)
+            continue
+        _worker_wakeup.clear()
+        with suppress(TimeoutError):
+            await asyncio.wait_for(
+                _worker_wakeup.wait(), timeout=settings.task_worker_poll_seconds
+            )
+
+
+async def start_task_worker() -> asyncio.Task[None]:
+    global _worker_event_loop
+    await recover_incomplete_runs()
+    _worker_event_loop = asyncio.get_running_loop()
+    _worker_stop.clear()
+    _worker_wakeup.set()
+    return asyncio.create_task(task_worker_loop(), name="sovereign-task-worker")
+
+
+async def stop_task_worker(worker: asyncio.Task[None]) -> None:
+    global _worker_event_loop
+    _worker_stop.set()
+    _worker_wakeup.set()
+    try:
+        await asyncio.wait_for(worker, timeout=5)
+    except TimeoutError:
+        worker.cancel()
+        with suppress(asyncio.CancelledError):
+            await worker
+    _worker_event_loop = None

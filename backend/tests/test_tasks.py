@@ -29,7 +29,7 @@ from app.schemas.common import ModelCreate
 from app.schemas.tasks import TaskCreate
 from app.services.hybrid_retrieval import gather_hybrid_evidence
 from app.services.model_registry import get_model, list_models, register_model, set_model_enabled
-from app.tasks.service import create_task, get_owned_task
+from app.tasks.service import cancel_task, create_task, get_owned_task, task_response
 from app.tools.registry import ToolContext, ToolRegistry
 
 
@@ -335,6 +335,40 @@ def test_task_creation_is_durable_idempotent_and_tenant_scoped(session: Session)
     with pytest.raises(AppError) as denied:
         get_owned_task(session, first.task_id, outsider)
     assert denied.value.code == "TASK_NOT_FOUND"
+
+
+def test_queued_tasks_report_fifo_position_and_cancel_without_worker(
+    session: Session,
+) -> None:
+    owner, workspace = tenant(session, "Queue")
+    settings = Settings(task_timeout_seconds=60)
+    first = create_task(
+        session,
+        TaskCreate(workspace_id=workspace.id, goal="First queued workflow"),
+        owner,
+        settings,
+        "queue-first",
+    )
+    second = create_task(
+        session,
+        TaskCreate(workspace_id=workspace.id, goal="Second queued workflow"),
+        owner,
+        settings,
+        "queue-second",
+    )
+    first_task = session.get(Task, first.task_id)
+    second_task = session.get(Task, second.task_id)
+    assert first_task is not None and second_task is not None
+
+    assert task_response(session, first_task).queue_position == 1
+    assert task_response(session, second_task).queue_position == 2
+
+    cancelled = cancel_task(session, first_task)
+    cancelled_run = session.get(TaskRun, first.run_id)
+    assert cancelled.status == "cancelled"
+    assert cancelled.queue_position is None
+    assert cancelled_run is not None and cancelled_run.status == "cancelled"
+    assert task_response(session, second_task).queue_position == 1
 
 
 def test_tool_policy_and_validated_docx(tmp_path: Path) -> None:

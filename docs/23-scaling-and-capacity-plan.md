@@ -30,7 +30,7 @@ Average latency alone is insufficient because it hides slow queued requests. Eve
 
 The current deployment has one `api-worker` process, started as one Uvicorn process. Lightweight API requests can overlap through FastAPI's async/thread-pool behavior, PostgreSQL, and Qdrant. This is suitable for several users browsing metadata, but it has not been load-tested and has no published requests-per-second guarantee.
 
-Governed task execution is different. All `execute_run` calls share one process-local `asyncio.Lock`, so exactly **one governed task run executes at a time per API process**. Additional accepted tasks wait on that in-memory lock.
+Governed task execution is different. Submitted runs remain in PostgreSQL with `queued` status. A lifecycle worker polls the durable records in FIFO order, and all `execute_run` calls share one process-local `asyncio.Lock`, so exactly **one governed task run executes at a time per API process**.
 
 The model profile also configures Ollama for one parallel request and one loaded model. This protects an 8 GB Mac from memory pressure, but it means the node is designed for serialization rather than model concurrency.
 
@@ -40,7 +40,7 @@ The model profile also configures Ollama for one parallel request and one loaded
 | File upload and metadata operations | May overlap within API and storage limits | Not benchmarked; large uploads can compete for memory and disk |
 | Qdrant search | Requests may overlap, but every semantic query first needs an embedding | Model-side embedding contention can serialize or queue work |
 | Knowledge ingestion | Background work may overlap other requests | Competes for the single Ollama runtime and should be admission-controlled |
-| Governed agent runs | Serialized by a process-local lock | One active run; additional runs wait |
+| Governed agent runs | PostgreSQL-backed FIFO polling, serialized by a process-local lock | One active run; additional runs remain visibly queued |
 | Direct inference | Application has no model semaphore around the route | Effective limit is delegated to Ollama; this is not a safe production admission policy |
 
 `MAX_CONCURRENT_MODEL_REQUESTS=1` expresses the intended profile, but the current application does not consistently enforce it around every generation and embedding call. It must not be presented as an implemented cross-process concurrency controller.
@@ -48,14 +48,14 @@ The model profile also configures Ollama for one parallel request and one loaded
 Implementation evidence:
 
 - [`runtime.py`](../backend/app/tasks/runtime.py) contains the process-local worker lock.
-- [`tasks.py`](../backend/app/api/routes/tasks.py) schedules runs through FastAPI background tasks.
+- [`tasks.py`](../backend/app/api/routes/tasks.py) commits work and signals the lifecycle worker without owning execution.
 - [`inference.py`](../backend/app/api/routes/inference.py) calls the model provider without acquiring a shared application permit.
 - [`config.py`](../backend/app/core/config.py) defines the intended concurrency setting.
 - [`docker-compose.yml`](../docker-compose.yml) starts the combined API/worker as a single Uvicorn process.
 
 ### What happens if 10 users submit together
 
-The API can accept 10 task submissions and create durable task/run records, but the work is not processed ten at a time. One run executes and the other nine wait in the API process.
+The API can accept 10 task submissions and create durable task/run records, but the work is not processed ten at a time. One run executes and the other nine remain queued in PostgreSQL.
 
 For one serialized worker and average execution time `S` seconds:
 
@@ -67,12 +67,12 @@ average queue wait in that burst = 4.5 × S seconds
 
 Example only: if a representative task occupies the worker for 30 seconds, the theoretical maximum is 2 runs/minute, average wait for a burst of 10 is 135 seconds, and the tenth run cannot start until about 270 seconds. These are queueing calculations, not measured product results.
 
-The current task deadline is assigned when the run is created, not when it acquires the worker. With a default 180-second deadline, a sufficiently large burst can consume most or all of later tasks' deadline while they wait. Therefore the current M1 profile does **not** reliably support 10 simultaneous governed task executions.
+The worker resets the execution deadline when a run starts, so time spent in the queue no longer consumes the run's execution budget. A separate maximum queue age and overload limit are still required before certifying a ten-user production capacity.
 
 ### Honest current answer
 
 - Ten users can plausibly remain signed in and browse, but this must still be verified by a load test.
-- Ten users may submit work, but governed runs execute one at a time and later runs can time out.
+- Ten users may submit work, but governed runs execute one at a time and queue latency increases with every run ahead of them.
 - The certified number of concurrent model requests is currently **not measured**.
 - The deliberate safe operating point for the M1/8 GB demo is **one active governed model workload**.
 
@@ -118,7 +118,7 @@ flowchart LR
 
 ### 1. Separate API request handling from task execution
 
-Move `execute_run` out of FastAPI `BackgroundTasks` into a dedicated worker service. Task submission should commit the run and return `202` without owning its execution lifecycle.
+The first step is implemented: `execute_run` no longer uses FastAPI `BackgroundTasks`; task submission commits the run, signals a lifecycle worker, and returns `202`. The next production step is moving that lifecycle worker into a dedicated service.
 
 Use a durable local queue. PostgreSQL is already authoritative and can support worker leasing with `SELECT ... FOR UPDATE SKIP LOCKED`, lease expiry, heartbeat, attempt count, and idempotent state transitions. Redis is optional, not required for a 10-user target.
 
@@ -241,7 +241,7 @@ The supported capacity is the highest tested workload that meets every service o
 
 ### Phase 1: Safe 10-user queue
 
-- Move execution to a durable worker.
+- Move the implemented database-polling lifecycle worker into a dedicated service.
 - Implement leases, heartbeat, idempotent completion, queue limits, cancellation, and fairness.
 - Start with two workers and one shared generation permit.
 - Start task execution deadlines when a worker lease is acquired, while enforcing a separate maximum queue age.

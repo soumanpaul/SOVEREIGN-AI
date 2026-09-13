@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Header
+from fastapi import APIRouter, Header
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 
@@ -18,7 +18,7 @@ from app.schemas.tasks import (
     TaskStepResponse,
 )
 from app.services.file_storage import resolve_storage_key
-from app.tasks.runtime import execute_run
+from app.tasks.runtime import notify_task_worker
 from app.tasks.service import (
     cancel_task,
     create_task,
@@ -34,14 +34,13 @@ router = APIRouter(tags=["tasks"])
 @router.post("/tasks", response_model=TaskAccepted, status_code=202)
 def submit_task(
     payload: TaskCreate,
-    background: BackgroundTasks,
     session: DatabaseSession,
     user: CurrentUser,
     settings: AppSettings,
     idempotency_key: Annotated[str | None, Header(max_length=120)] = None,
 ) -> TaskAccepted:
     accepted = create_task(session, payload, user, settings, idempotency_key)
-    background.add_task(execute_run, accepted.run_id)
+    notify_task_worker()
     return accepted
 
 
@@ -63,13 +62,12 @@ def cancel(task_id: uuid.UUID, session: DatabaseSession, user: CurrentUser) -> T
 @router.post("/tasks/{task_id}/retry", response_model=TaskAccepted, status_code=202)
 def retry(
     task_id: uuid.UUID,
-    background: BackgroundTasks,
     session: DatabaseSession,
     user: CurrentUser,
     settings: AppSettings,
 ) -> TaskAccepted:
     accepted = retry_task(session, get_owned_task(session, task_id, user), settings)
-    background.add_task(execute_run, accepted.run_id)
+    notify_task_worker()
     return accepted
 
 

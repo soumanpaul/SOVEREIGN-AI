@@ -90,6 +90,7 @@ class TaskResponse(BaseModel):
     knowledge_base_ids: list[str]
     requested_outputs: list[str]
     status: str
+    queue_position: int | None = None
     created_at: datetime
     updated_at: datetime
     latest_run: TaskRunResponse | None = None

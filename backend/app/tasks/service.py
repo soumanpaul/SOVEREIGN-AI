@@ -187,7 +187,17 @@ def task_response(session: Session, task: Task) -> TaskResponse:
         run_response = TaskRunResponse.model_validate(run).model_copy(
             update={"steps": steps, "artifacts": [artifact_response(item) for item in artifacts]}
         )
-    return TaskResponse.model_validate(task).model_copy(update={"latest_run": run_response})
+    queue_position = None
+    if run and run.status == "queued":
+        ahead = session.scalar(
+            select(func.count())
+            .select_from(TaskRun)
+            .where(TaskRun.status == "queued", TaskRun.created_at < run.created_at)
+        ) or 0
+        queue_position = ahead + 1
+    return TaskResponse.model_validate(task).model_copy(
+        update={"latest_run": run_response, "queue_position": queue_position}
+    )
 
 
 def get_owned_task(session: Session, task_id: uuid.UUID, user: User) -> Task:
@@ -220,10 +230,16 @@ def cancel_task(session: Session, task: Task) -> TaskResponse:
     run = session.scalar(
         select(TaskRun).where(TaskRun.task_id == task.id).order_by(TaskRun.attempt.desc())
     )
-    if run:
+    current_time = datetime.now(UTC)
+    if run and run.status == "queued":
+        run.status = task.status = "cancelled"
         run.cancel_requested = True
-    task.status = "cancel_requested"
-    task.updated_at = datetime.now(UTC)
+        run.completed_at = current_time
+    else:
+        if run:
+            run.cancel_requested = True
+        task.status = "cancel_requested"
+    task.updated_at = current_time
     session.commit()
     return task_response(session, task)
 

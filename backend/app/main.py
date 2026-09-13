@@ -13,10 +13,13 @@ from app.core.errors import AppError
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    from app.tasks.runtime import recover_incomplete_runs
+    from app.tasks.runtime import start_task_worker, stop_task_worker
 
-    await recover_incomplete_runs()
-    yield
+    worker = await start_task_worker()
+    try:
+        yield
+    finally:
+        await stop_task_worker(worker)
 
 
 settings = get_settings()
