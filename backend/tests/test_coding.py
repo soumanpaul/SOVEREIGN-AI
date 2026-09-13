@@ -12,11 +12,29 @@ from app.services.code_repository import (
     apply_unified_diff,
     materialize_repository,
     repository_diff,
+    repository_prompt,
     resolve_verification_command,
     restore_repository_files,
     snapshot_repository,
 )
 from app.tasks.runtime import _coding_failure_summary
+
+
+def test_repository_prompt_only_lists_source_code_as_implementation_targets() -> None:
+    prompt = repository_prompt(
+        "Fix the implementation.",
+        {
+            "monitor.py": "VALUE = 1\n",
+            "readings.csv": "value\n1\n",
+            "README.md": "# Fixture\n",
+            "test_monitor.py": "def test_value():\n    assert True\n",
+        },
+    )
+
+    targets = prompt.split("IMPLEMENTATION TARGETS:\n", 1)[1].split(
+        "\n\nIMMUTABLE", 1
+    )[0]
+    assert targets == "monitor.py"
 
 
 def stored_archive(tmp_path: Path, workspace: Workspace, members: dict[str, str]) -> StoredFile:
@@ -60,6 +78,7 @@ def test_repository_materialization_patch_and_artifacts(tmp_path: Path) -> None:
         workspace,
         {
             "src/calculator.py": "def add(left, right):\n    return left - right\n",
+            "readings.csv": "timestamp,value\n2026-09-12T10:00:00Z,90.0\n",
             "test_calculator.py": (
                 "from src.calculator import add\n\ndef test_add():\n    assert add(2, 3) == 5\n"
             ),
@@ -92,6 +111,7 @@ def test_repository_materialization_patch_and_artifacts(tmp_path: Path) -> None:
 
     assert changed == ["src/calculator.py"]
     assert "return left + right" in after["src/calculator.py"]
+    assert "90.0" in after["readings.csv"]
     assert "**" not in patch
     assert {item.logical_name for item in artifacts} == {
         "code_patch",
@@ -102,6 +122,7 @@ def test_repository_materialization_patch_and_artifacts(tmp_path: Path) -> None:
     repository_zip = next(item for item in artifacts if item.logical_name == "verified_repository")
     with zipfile.ZipFile(tmp_path / repository_zip.storage_key) as archive:
         assert "return left + right" in archive.read("src/calculator.py").decode()
+        assert "90.0" in archive.read("readings.csv").decode()
 
 
 def test_patch_accepts_wrong_hunk_position_only_with_unique_exact_context(tmp_path: Path) -> None:

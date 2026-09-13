@@ -7,6 +7,14 @@ from app.core.errors import AppError
 from app.model_providers.base import ChatRequest, ChatResult, EmbeddingResult, ProviderHealth
 
 
+def _optional_int(value: object) -> int | None:
+    return int(value) if isinstance(value, int | float) else None
+
+
+def _nanoseconds_to_ms(value: object) -> int | None:
+    return int(value / 1_000_000) if isinstance(value, int | float) else None
+
+
 class OllamaModelProvider:
     def __init__(self, base_url: str, timeout_seconds: float = 120.0) -> None:
         self._base_url = base_url.rstrip("/")
@@ -76,7 +84,8 @@ class OllamaModelProvider:
             ) from exc
 
         elapsed = int((time.perf_counter() - started) * 1000)
-        content = str(response.json().get("message", {}).get("content", "")).strip()
+        response_data = response.json()
+        content = str(response_data.get("message", {}).get("content", "")).strip()
         if not content:
             raise AppError(
                 code="MODEL_EMPTY_RESPONSE",
@@ -84,7 +93,14 @@ class OllamaModelProvider:
                 status_code=502,
                 retryable=True,
             )
-        return ChatResult(content=content, duration_ms=elapsed)
+        return ChatResult(
+            content=content,
+            duration_ms=elapsed,
+            prompt_tokens=_optional_int(response_data.get("prompt_eval_count")),
+            completion_tokens=_optional_int(response_data.get("eval_count")),
+            load_duration_ms=_nanoseconds_to_ms(response_data.get("load_duration")),
+            evaluation_duration_ms=_nanoseconds_to_ms(response_data.get("eval_duration")),
+        )
 
     async def embed(self, texts: list[str], model_key: str) -> EmbeddingResult:
         if not texts:
@@ -97,6 +113,21 @@ class OllamaModelProvider:
                     json={"model": model_key, "input": texts, "truncate": True, "keep_alive": "2m"},
                 )
                 response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                raise AppError(
+                    code="MODEL_NOT_INSTALLED",
+                    message=f"The configured local embedding model '{model_key}' is not installed.",
+                    status_code=503,
+                    retryable=False,
+                    details={"model_key": model_key},
+                ) from exc
+            raise AppError(
+                code="EMBEDDING_FAILED",
+                message="The local embedding model could not process the text.",
+                status_code=503,
+                retryable=exc.response.status_code >= 500,
+            ) from exc
         except httpx.HTTPError as exc:
             raise AppError(
                 code="EMBEDDING_FAILED",

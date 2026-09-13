@@ -45,3 +45,10 @@ export function formatContextWindow(value: number | null): string {
   if (value === null) return "Unknown";
   return value >= 1024 ? `${Math.round(value / 1024)}K` : String(value);
 }
+
+export function desiredIndexFileIds(
+  files: Array<{ id: string; indexed: boolean }>,
+  addedFileId: string,
+): string[] {
+  return Array.from(new Set([...files.filter((file) => file.indexed).map((file) => file.id), addedFileId]));
+}

@@ -57,6 +57,49 @@ class EgressTestResponse(BaseModel):
     target: str
     duration_ms: int
     detail: str
+    observed_at: datetime
+    enforcement: Literal["configured", "unconfigured"]
+    probe_version: str
+
+
+class SecurityControlEvidence(BaseModel):
+    key: str
+    label: str
+    status: Literal["enforced", "verified", "attention", "unknown"]
+    detail: str
+
+
+class SovereigntyMetrics(BaseModel):
+    task_runs: int
+    completed_runs: int
+    failed_runs: int
+    audit_events: int
+    artifacts: int
+    policy_denials: int
+    model_requests: int
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    average_runtime_ms: int | None
+
+
+class SecurityEventResponse(BaseModel):
+    id: UUID
+    event_type: str
+    status: str
+    detail: str
+    occurred_at: datetime
+    run_id: UUID | None = None
+
+
+class SovereigntyStatusResponse(BaseModel):
+    overall: Literal["verified", "attention", "unknown"]
+    generated_at: datetime
+    controls: list[SecurityControlEvidence]
+    metrics: SovereigntyMetrics
+    enabled_models: int
+    ready_models: int
+    latest_egress_probe: EgressTestResponse | None = None
+    recent_security_events: list[SecurityEventResponse] = Field(default_factory=list)
 
 
 class InferenceRequest(BaseModel):

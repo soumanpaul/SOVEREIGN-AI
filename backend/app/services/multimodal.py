@@ -29,6 +29,8 @@ class MultimodalResult:
     vision_model: str | None
     warnings: list[str]
     duration_ms: int
+    prompt_tokens: int
+    completion_tokens: int
 
 
 def _render_page(path: Path, media_type: str, page_number: int, dpi: int) -> bytes:
@@ -95,6 +97,8 @@ async def enrich_multimodal_inputs(
     model = await _vision_model(session, provider) if bounded else None
     warnings: list[str] = []
     vision_pages = 0
+    prompt_tokens = 0
+    completion_tokens = 0
     if bounded and model is None:
         warnings.append(
             "No healthy registered vision model was available; OCR text was retained as the "
@@ -125,6 +129,8 @@ async def enrich_multimodal_inputs(
                     images=(base64.b64encode(image).decode("ascii"),),
                 )
             )
+            prompt_tokens += result.prompt_tokens or 0
+            completion_tokens += result.completion_tokens or 0
             replacement = NormalizedPage(
                 target.number,
                 f"{target.text}\n\n[Visual analysis]\n{result.content}",
@@ -152,4 +158,6 @@ async def enrich_multimodal_inputs(
         vision_model=model.model_key if model else None,
         warnings=warnings,
         duration_ms=int((time.perf_counter() - started) * 1000),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
     )

@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, File, UploadFile
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.api.dependencies import AppSettings, CurrentUser, DatabaseSession, OllamaProvider
 from app.core.errors import AppError
@@ -73,9 +73,21 @@ def create_workspace(
 
 @router.get("/workspaces/{workspace_id}/files", response_model=list[FileResponse])
 def list_files(
-    workspace_id: uuid.UUID, session: DatabaseSession, user: CurrentUser
+    workspace_id: uuid.UUID,
+    session: DatabaseSession,
+    user: CurrentUser,
+    knowledge_base_id: uuid.UUID | None = None,
 ) -> list[FileResponse]:
     owned_workspace(session, workspace_id, user)
+    knowledge_base = None
+    if knowledge_base_id is not None:
+        knowledge_base = owned_knowledge_base(session, knowledge_base_id, user)
+        if knowledge_base.workspace_id != workspace_id:
+            raise AppError(
+                "KNOWLEDGE_BASE_NOT_FOUND",
+                "Knowledge base not found in this workspace.",
+                404,
+            )
     files = list(
         session.scalars(
             select(StoredFile)
@@ -83,18 +95,19 @@ def list_files(
             .order_by(StoredFile.created_at.desc())
         )
     )
-    indexed_file_ids = set(
-        session.scalars(
-            select(Document.file_id)
-            .join(KnowledgeBaseDocument, KnowledgeBaseDocument.document_id == Document.id)
-            .join(KnowledgeBase, KnowledgeBase.id == KnowledgeBaseDocument.knowledge_base_id)
-            .where(
-                KnowledgeBase.workspace_id == workspace_id,
-                KnowledgeBaseDocument.status == "indexed",
-                KnowledgeBaseDocument.index_version == KnowledgeBase.active_index_version,
-            )
+    indexed_statement = (
+        select(Document.file_id)
+        .join(KnowledgeBaseDocument, KnowledgeBaseDocument.document_id == Document.id)
+        .join(KnowledgeBase, KnowledgeBase.id == KnowledgeBaseDocument.knowledge_base_id)
+        .where(
+            KnowledgeBase.workspace_id == workspace_id,
+            KnowledgeBaseDocument.status == "indexed",
+            KnowledgeBaseDocument.index_version == KnowledgeBase.active_index_version,
         )
     )
+    if knowledge_base is not None:
+        indexed_statement = indexed_statement.where(KnowledgeBase.id == knowledge_base.id)
+    indexed_file_ids = set(session.scalars(indexed_statement))
     return [
         FileResponse.model_validate(item).model_copy(
             update={"indexed": item.id in indexed_file_ids}
@@ -204,7 +217,14 @@ def ingest(
         item.workspace_id != kb.workspace_id or item.status == "deleted" for item in files
     ):
         raise AppError("FILE_NOT_FOUND", "Every file must belong to this workspace.", 404)
-    version = (kb.active_index_version or 0) + 1
+    # Failed staged versions deliberately remain available for diagnosis. Always advance
+    # past every attempted version so a retry cannot collide with their immutable rows.
+    latest_attempt = session.scalar(
+        select(func.max(IngestionJob.index_version)).where(
+            IngestionJob.knowledge_base_id == kb.id
+        )
+    )
+    version = max(kb.active_index_version or 0, latest_attempt or 0) + 1
     job = IngestionJob(
         knowledge_base_id=kb.id,
         requested_file_ids=[str(item) for item in payload.file_ids],

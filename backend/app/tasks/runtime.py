@@ -27,7 +27,7 @@ from app.db.models import (
     User,
 )
 from app.db.session import SessionLocal
-from app.model_providers.base import ChatRequest
+from app.model_providers.base import ChatRequest, ChatResult
 from app.model_providers.ollama import OllamaModelProvider
 from app.routing.router import classify_task, route_model
 from app.services.code_repository import (
@@ -118,6 +118,19 @@ TERMINAL = {"completed", "failed", "cancelled", "timed_out"}
 
 def now() -> datetime:
     return datetime.now(UTC)
+
+
+def chat_metrics(chat: ChatResult) -> dict[str, int]:
+    metrics = {"model_duration_ms": chat.duration_ms}
+    for key, value in {
+        "prompt_tokens": chat.prompt_tokens,
+        "completion_tokens": chat.completion_tokens,
+        "model_load_ms": chat.load_duration_ms,
+        "model_evaluation_ms": chat.evaluation_duration_ms,
+    }.items():
+        if value is not None:
+            metrics[key] = value
+    return metrics
 
 
 def add_audit(
@@ -456,7 +469,7 @@ async def execute_coding_workflow(
                     ),
                     tool_name="apply_patch",
                     input_data={"attempt": attempt},
-                    output_data={"error_code": exc.code},
+                    output_data={"error_code": exc.code, **chat_metrics(chat)},
                 )
                 add_audit(
                     session,
@@ -482,7 +495,11 @@ async def execute_coding_workflow(
                     "attempt": attempt,
                     "patch_sha256": hashlib.sha256(patch.encode()).hexdigest(),
                 },
-                output_data={**applied.data, "changed_files": changed_files},
+                output_data={
+                    **applied.data,
+                    "changed_files": changed_files,
+                    **chat_metrics(chat),
+                },
                 duration_ms=chat.duration_ms + applied.duration_ms,
             )
             add_audit(
@@ -687,8 +704,21 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
         session.commit()
         check_run(session, task, run)
 
+        input_filenames = list(
+            session.scalars(
+                select(StoredFile.display_name).where(
+                    StoredFile.id.in_([uuid.UUID(value) for value in task.input_file_ids]),
+                    StoredFile.workspace_id == task.workspace_id,
+                    StoredFile.status != "deleted",
+                )
+            )
+        )
         classification = classify_task(
-            task.goal, bool(task.input_file_ids), bool(task.knowledge_base_ids), task.mode
+            task.goal,
+            bool(task.input_file_ids),
+            bool(task.knowledge_base_ids),
+            task.mode,
+            input_filenames,
         )
         task.task_type = classification.task_type
         task.required_capabilities = classification.capabilities
@@ -814,6 +844,8 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
                         "ocr_pages": multimodal.ocr_pages,
                         "vision_model": multimodal.vision_model,
                         "warnings": multimodal.warnings,
+                        "prompt_tokens": multimodal.prompt_tokens,
+                        "completion_tokens": multimodal.completion_tokens,
                     },
                     duration_ms=multimodal.duration_ms,
                 )
@@ -998,7 +1030,11 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
                 else f"{decision.model.model_key} produced a validated local response."
             ),
             input_data={"prompt_chars": len(prompt), "evidence_count": len(evidence)},
-            output_data={"response_chars": len(result_text), "citation_count": len(citations)},
+            output_data={
+                "response_chars": len(result_text),
+                "citation_count": len(citations),
+                **chat_metrics(chat),
+            },
             duration_ms=int((time.perf_counter() - started) * 1000),
         )
         check_run(session, task, run)
@@ -1183,6 +1219,14 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
                 run.error_category = "dependency_unavailable" if exc.retryable else "validation"
                 run.error_message = exc.message[:500]
                 run.completed_at = task.updated_at = now()
+                if "DENIED" in exc.code or "POLICY" in exc.code:
+                    add_audit(
+                        session,
+                        task,
+                        run,
+                        "POLICY_DENIED",
+                        {"error_code": exc.code, "category": run.error_category},
+                    )
                 add_audit(
                     session,
                     task,

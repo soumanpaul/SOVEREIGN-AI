@@ -1,9 +1,12 @@
+import re
 from dataclasses import dataclass
+from pathlib import PurePath
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
+from app.core.file_types import is_source_code_filename
 from app.db.models import RegisteredModel
 from app.model_providers.ollama import OllamaModelProvider
 
@@ -23,10 +26,43 @@ class RouteDecision:
 
 
 def classify_task(
-    goal: str, has_files: bool, has_knowledge: bool, requested_mode: str = "auto"
+    goal: str,
+    has_files: bool,
+    has_knowledge: bool,
+    requested_mode: str = "auto",
+    filenames: list[str] | tuple[str, ...] = (),
 ) -> Classification:
     normalized = goal.casefold()
-    coding = any(word in normalized for word in ("code", "bug", "fix", "test", "repository"))
+    source_suffixes = sorted(
+        {PurePath(name.casefold()).suffix for name in filenames if is_source_code_filename(name)}
+    )
+    coding_terms = (
+        "api endpoint",
+        "backend",
+        "bug",
+        "build error",
+        "code",
+        "coding",
+        "compile",
+        "compiler",
+        "database migration",
+        "debug",
+        "frontend",
+        "function",
+        "implement",
+        "javascript",
+        "python",
+        "react component",
+        "refactor",
+        "repository",
+        "source file",
+        "test",
+        "tests",
+        "typescript",
+    )
+    coding = bool(source_suffixes) or any(
+        re.search(rf"\b{re.escape(term)}\b", normalized) for term in coding_terms
+    )
     spreadsheet = requested_mode == "procurement" or any(
         word in normalized
         for word in ("spreadsheet", "quotation", "procurement", "vendor", "compare bids")
@@ -41,8 +77,17 @@ def classify_task(
         return Classification(
             "procurement", ["text", "reasoning"], "procurement_agent", ["procurement intent"]
         )
+    if requested_mode == "document":
+        return Classification(
+            "document_analysis", ["text", "reasoning"], "document_agent", ["document intent"]
+        )
     if coding:
-        return Classification("coding", ["text", "coding"], "coding_agent", ["coding intent"])
+        reason = (
+            f"source files supplied: {', '.join(source_suffixes)}"
+            if source_suffixes
+            else "coding intent"
+        )
+        return Classification("coding", ["text", "coding"], "coding_agent", [reason])
     if spreadsheet:
         return Classification(
             "procurement", ["text", "reasoning"], "procurement_agent", ["procurement intent"]
@@ -51,7 +96,7 @@ def classify_task(
         return Classification(
             "rag", ["text", "reasoning"], "document_agent", ["knowledge base supplied"]
         )
-    if requested_mode == "document" or document:
+    if document:
         return Classification(
             "document_analysis", ["text", "reasoning"], "document_agent", ["files supplied"]
         )

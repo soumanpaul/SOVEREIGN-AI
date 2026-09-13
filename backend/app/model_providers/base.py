@@ -16,6 +16,10 @@ class ChatRequest:
 class ChatResult:
     content: str
     duration_ms: int
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    load_duration_ms: int | None = None
+    evaluation_duration_ms: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

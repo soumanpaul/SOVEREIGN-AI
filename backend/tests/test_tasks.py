@@ -137,6 +137,42 @@ def test_classification_is_deterministic_and_context_aware() -> None:
     assert explicit.task_type == "procurement"
 
 
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "service.py",
+        "engine.c",
+        "engine.cpp",
+        "controller.java",
+        "main.go",
+        "lib.rs",
+        "view.tsx",
+        "contract.sol",
+        "pipeline.scala",
+        "repository.zip",
+    ],
+)
+def test_auto_classification_routes_source_files_to_coder(filename: str) -> None:
+    result = classify_task("Review the attached file", True, False, "auto", [filename])
+
+    assert result.task_type == "coding"
+    assert result.capabilities == ["text", "coding"]
+    assert result.agent_profile == "coding_agent"
+
+
+@pytest.mark.parametrize("filename", ["policy.pdf", "notes.md", "data.json", "quote.csv"])
+def test_auto_classification_does_not_treat_documents_as_source_code(filename: str) -> None:
+    result = classify_task("Review the attached file", True, False, "auto", [filename])
+
+    assert result.task_type == "document_analysis"
+
+
+def test_explicit_document_mode_overrides_code_filename_detection() -> None:
+    result = classify_task("Explain this sample", True, False, "document", ["sample.py"])
+
+    assert result.task_type == "document_analysis"
+
+
 def test_model_registration_persists_capabilities_and_rejects_duplicates(
     session: Session,
 ) -> None:

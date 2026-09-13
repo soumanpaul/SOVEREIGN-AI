@@ -99,4 +99,8 @@ def test_procurement_artifacts_are_branded_and_structurally_valid(
     document = Document(tmp_path / docx.storage_key)
     assert document.core_properties.author == "Acme Engineering™"
     assert any("Aravind Industrial" in paragraph.text for paragraph in document.paragraphs)
-    assert len(document.tables) == 1
+    assert len(document.tables) == 0
+    assert any(
+        paragraph.text == "Aravind Industrial — PASS"
+        for paragraph in document.paragraphs
+    )

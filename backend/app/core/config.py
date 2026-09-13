@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     auth_cookie_name: str = "sovereignforge_session"
     auth_session_hours: int = Field(default=24 * 7, ge=1, le=24 * 90)
+    app_egress_enforced: bool = False
+    egress_probe_target: str = "https://example.com"
+    egress_probe_timeout_seconds: float = Field(default=3.0, ge=0.5, le=10.0)
 
     database_url: str = (
         "postgresql+psycopg://sovereignforge:sovereignforge_dev@localhost:5432/sovereignforge"

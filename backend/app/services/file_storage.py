@@ -8,8 +8,10 @@ from pathlib import Path
 from fastapi import UploadFile
 
 from app.core.errors import AppError
+from app.core.file_types import SOURCE_CODE_SUFFIXES
 
 ALLOWED_TYPES = {
+    **{suffix: "text/plain" for suffix in SOURCE_CODE_SUFFIXES},
     ".pdf": "application/pdf",
     ".txt": "text/plain",
     ".md": "text/markdown",
@@ -27,6 +29,10 @@ ALLOWED_TYPES = {
     ".toml": "application/toml",
     ".yaml": "application/yaml",
     ".yml": "application/yaml",
+    ".cfg": "text/plain",
+    ".ini": "text/plain",
+    ".ipynb": "application/json",
+    ".xml": "application/xml",
 }
 
 

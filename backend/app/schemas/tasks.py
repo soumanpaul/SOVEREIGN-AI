@@ -53,6 +53,15 @@ class ArtifactResponse(BaseModel):
     download_url: str | None = None
 
 
+class ArtifactPreviewResponse(BaseModel):
+    artifact_id: UUID
+    display_name: str
+    media_type: str
+    preview_type: Literal["document", "spreadsheet", "text", "binary"]
+    content: str
+    truncated: bool
+
+
 class TaskRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

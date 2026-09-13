@@ -29,6 +29,8 @@ data/
 .DS_Store
 .playwright-mcp/
 /day2-knowledge.png
+demo/presentation-v1/qa/**
+!demo/presentation-v1/qa/README.md
 
 # Editors
 .idea/

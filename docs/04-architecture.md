@@ -18,11 +18,13 @@ Use a **modular monolith** for the application and separate infrastructure proce
 ```mermaid
 flowchart LR
     U[Operator] -->|localhost HTTPS/HTTP| FE[Next.js UI]
-    FE -->|REST + SSE| API[FastAPI modular monolith]
+    FE -->|REST + SSE| IG[Fixed API ingress]
+    IG -->|allowlisted /api/v1| API[FastAPI modular monolith]
     API --> PG[(PostgreSQL)]
     API --> QD[(Qdrant)]
     API --> FS[(Local workspace storage)]
-    API --> OL[Native Ollama<br/>Apple Metal inference]
+    API --> OG[Fixed Ollama gateway]
+    OG --> OL[Native Ollama<br/>Apple Metal inference]
     API --> SB[Sandbox controller]
     SB --> CT[Ephemeral runner<br/>network none]
     API --> OCR[Local OCR]
@@ -65,12 +67,15 @@ flowchart LR
 
 ## Deployment topology
 
-The M1 8 GB prototype runs Ollama natively on macOS for Apple Metal acceleration. Docker Compose runs the frontend, API, PostgreSQL and Qdrant. It currently creates:
+The M1 8 GB prototype runs Ollama natively on macOS for Apple Metal acceleration. Docker Compose runs the frontend, fixed-purpose gateways, API, PostgreSQL, Qdrant, and sandbox controller. It creates:
 
-- `app_net`: frontend can reach API, and API can reach native Ollama through the host gateway.
-- `data_net` with `internal: true`: PostgreSQL and Qdrant are private and have no published ports.
+- `ingress_net`: the browser-facing Next.js UI can reach only the fixed-upstream API ingress.
+- `app_net` with `internal: true`: the ingress, API, and fixed-upstream Ollama gateway communicate privately.
+- `data_net` with `internal: true`: only the API, PostgreSQL, Qdrant, and optional pgAdmin share the data plane.
+- `sandbox_control_net` with `internal: true`: only the API and sandbox controller communicate.
+- `ollama_host_net`: only the allowlisted Ollama gateway has the host route required for native Apple Metal inference.
 
-Day 6 hardening must restrict application egress while retaining an explicit host route to Ollama. Until that control and its probe are implemented, “no cloud provider configured” is proven but full runtime egress denial is not claimed.
+The API worker has no general egress route. Browser traffic enters through a fixed internal upstream, and model traffic exits through a gateway that exposes only the Ollama tag, chat, and embedding operations. The sovereignty probe records the observed result; the UI claims runtime isolation only when configuration and a blocked live probe agree.
 
 The ephemeral sandbox uses `network_mode: none`, read-only base image, non-root user, dropped capabilities, memory/CPU/PID limits, and only a task-specific temporary mount. Production hardening may add seccomp/AppArmor and a dedicated runner host.
 

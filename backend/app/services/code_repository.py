@@ -10,36 +10,11 @@ from pathlib import Path, PurePosixPath
 
 from app.core.config import Settings
 from app.core.errors import AppError
+from app.core.file_types import REPOSITORY_SUPPORT_SUFFIXES, SOURCE_CODE_SUFFIXES
 from app.db.models import StoredFile
 from app.services.file_storage import resolve_storage_key
 
-CODE_SUFFIXES = {
-    ".c",
-    ".cfg",
-    ".cpp",
-    ".css",
-    ".go",
-    ".h",
-    ".html",
-    ".ini",
-    ".java",
-    ".js",
-    ".json",
-    ".jsx",
-    ".md",
-    ".php",
-    ".py",
-    ".rb",
-    ".rs",
-    ".sh",
-    ".toml",
-    ".ts",
-    ".tsx",
-    ".txt",
-    ".xml",
-    ".yaml",
-    ".yml",
-}
+CODE_SUFFIXES = REPOSITORY_SUPPORT_SUFFIXES
 IGNORED_PARTS = {
     ".git",
     ".idea",
@@ -269,7 +244,7 @@ def repository_prompt(
         path
         for path in files
         if not is_verification_path(path)
-        and PurePosixPath(path).suffix.casefold() not in {".md", ".txt"}
+        and PurePosixPath(path).suffix.casefold() in SOURCE_CODE_SUFFIXES
     )
     retry = (
         "\n\nCURRENT VERIFICATION FAILURE — HIGHEST PRIORITY:\n"

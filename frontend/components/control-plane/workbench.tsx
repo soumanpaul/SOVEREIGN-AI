@@ -10,7 +10,7 @@ import remarkGfm from "remark-gfm";
 import { API_URL } from "@/lib/api";
 import type { AuthUser } from "@/lib/auth";
 import { Badge, Head, Title } from "./ui";
-import { elapsedSeconds, formatBytes, isTaskActive, request, type AgentTask, type KnowledgeBase, type StoredFile, type TaskAccepted, type Workspace } from "./types";
+import { elapsedSeconds, formatBytes, isTaskActive, request, type AgentTask, type ArtifactPreview, type KnowledgeBase, type StoredFile, type TaskAccepted, type Workspace } from "./types";
 
 function displayableMarkdown(value: string) {
   return value
@@ -19,8 +19,27 @@ function displayableMarkdown(value: string) {
     .trim();
 }
 
+const SOURCE_CODE_EXTENSIONS = [
+  ".asm", ".astro", ".bash", ".c", ".cc", ".clj", ".cljs", ".cljc", ".cob",
+  ".cpp", ".cs", ".css", ".cu", ".cuh", ".cxx", ".dart", ".erl", ".ex", ".exs",
+  ".fish", ".fs", ".fsx", ".go", ".gql", ".gradle", ".graphql", ".groovy", ".h",
+  ".hh", ".hpp", ".hrl", ".hs", ".htm", ".html", ".hxx", ".java", ".js", ".jsx",
+  ".kt", ".kts", ".less", ".lhs", ".lua", ".m", ".mm", ".ml", ".mli", ".nim",
+  ".php", ".pl", ".pm", ".proto", ".ps1", ".py", ".r", ".rb", ".rs", ".s", ".sass",
+  ".scala", ".scss", ".sh", ".sol", ".sql", ".svelte", ".swift", ".tf", ".ts", ".tsx",
+  ".vb", ".vue", ".zig", ".zsh",
+] as const;
+const SOURCE_CODE_EXTENSION_SET = new Set<string>(SOURCE_CODE_EXTENSIONS);
+const WORKBENCH_UPLOAD_ACCEPT = [
+  ".pdf", ".md", ".txt", ".csv", ".png", ".jpg", ".jpeg", ".zip", ".json",
+  ".toml", ".yaml", ".yml", ".ini", ".cfg", ".xml", ".ipynb",
+  ...SOURCE_CODE_EXTENSIONS,
+].join(",");
+
 function isCodingInput(file: StoredFile) {
-  return /\.(zip|py|js|jsx|ts|tsx|json|toml|ya?ml|md|txt)$/i.test(file.display_name);
+  const normalized = file.display_name.toLocaleLowerCase();
+  const suffix = normalized.includes(".") ? normalized.slice(normalized.lastIndexOf(".")) : "";
+  return suffix === ".zip" || SOURCE_CODE_EXTENSION_SET.has(suffix);
 }
 
 type WorkflowMode = "auto" | "document" | "coding" | "procurement";
@@ -245,6 +264,17 @@ export function Workbench() {
       void queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
+  const artifactPreview = useMutation({
+    mutationFn: (artifactId: string) => request<ArtifactPreview>(`/artifacts/${artifactId}/preview`),
+  });
+  useEffect(() => {
+    if (!artifactPreview.data) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") artifactPreview.reset();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [artifactPreview]);
 
   async function upload(selected: FileList | null) {
     if (!workspaceId || !selected?.length || activeTab?.taskId) return;
@@ -360,9 +390,9 @@ export function Workbench() {
     {displayedError && <div className="api-error" role="alert">{displayedError}</div>}
     <div className="workbench">
       <section className="panel files">
-        <Head n="01" label="INPUTS" title="Workspace files" action={<><select className="compact-select" aria-label="Workspace" value={workspaceId} disabled={Boolean(activeTab?.taskId)} onChange={(event) => updateActiveTab({ workspaceId: event.target.value, selectedFileIds: [], selectedKnowledgeBaseIds: [], selectionInitialized: false })}>{workspaces.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><button className="square" aria-label="Add files" disabled={Boolean(activeTab?.taskId)} onClick={() => fileInput.current?.click()}><Plus size={16} /></button></>} />
-        <input ref={fileInput} className="hidden-file" type="file" multiple accept=".pdf,.md,.txt,.csv,.png,.jpg,.jpeg,.zip,.py,.js,.jsx,.ts,.tsx,.json,.toml,.yaml,.yml" onChange={(event) => void upload(event.target.files)} />
-        <div className={`drop ${dragging ? "dragging" : ""} ${activeTab?.taskId ? "locked" : ""}`} onClick={() => { if (!activeTab?.taskId) fileInput.current?.click(); }} onDragEnter={(event) => { event.preventDefault(); if (!activeTab?.taskId) setDragging(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={() => setDragging(false)} onDrop={dropFiles}><Upload size={20} /><b>{activeTab?.taskId ? "Submitted input snapshot" : taskMode === "coding" ? "Drop a repository ZIP or source files" : "Drop confidential files"}</b><small>{activeTab?.taskId ? "Create a New Workflow to change files" : taskMode === "coding" ? "ZIP, Python, JS/TS, JSON, TOML or YAML · max 20 MB" : "PDF, Markdown, text, CSV, PNG or JPEG · max 20 MB"}</small>{!activeTab?.taskId && <button type="button">Browse local files</button>}</div>
+        <Head n="01" label="INPUTS" title="Workspace files" action={<button className="square" aria-label="Add files" disabled={Boolean(activeTab?.taskId)} onClick={() => fileInput.current?.click()}><Plus size={16} /></button>} />
+        <input ref={fileInput} className="hidden-file" type="file" multiple accept={WORKBENCH_UPLOAD_ACCEPT} onChange={(event) => void upload(event.target.files)} />
+        <div className={`drop ${dragging ? "dragging" : ""} ${activeTab?.taskId ? "locked" : ""}`} onClick={() => { if (!activeTab?.taskId) fileInput.current?.click(); }} onDragEnter={(event) => { event.preventDefault(); if (!activeTab?.taskId) setDragging(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={() => setDragging(false)} onDrop={dropFiles}><Upload size={20} /><b>{activeTab?.taskId ? "Submitted input snapshot" : taskMode === "coding" ? "Drop a repository ZIP or source files" : "Drop confidential files"}</b><small>{activeTab?.taskId ? "Create a New Workflow to change files" : taskMode === "coding" ? "ZIP or common source-code formats · max 20 MB" : "Documents, images, source files or ZIP · max 20 MB"}</small>{!activeTab?.taskId && <button type="button">Browse local files</button>}</div>
         <label className="select-all-files"><input type="checkbox" checked={files.length > 0 && selectedFileIds.size === files.length} disabled={!files.length || Boolean(activeTab?.taskId)} onChange={(event) => updateActiveTab({ selectedFileIds: event.target.checked ? files.map((file) => file.id) : [], selectionInitialized: true })} /><span>Select all files</span><small>{selectedFileIds.size} / {files.length}</small></label>
         <div className="file-list all-files">{files.map((file) => <div className={`file-row ${selectedFileIds.has(file.id) ? "selected" : ""}`} key={file.id} role="checkbox" aria-checked={selectedFileIds.has(file.id)} tabIndex={activeTab?.taskId ? -1 : 0} onClick={() => toggleFile(file.id)} onKeyDown={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); toggleFile(file.id); } }}><input type="checkbox" aria-label={`Include ${file.display_name}`} checked={selectedFileIds.has(file.id)} disabled={Boolean(activeTab?.taskId)} onChange={() => toggleFile(file.id)} onClick={(event) => event.stopPropagation()} /><i className={/\.(png|jpe?g)$/i.test(file.display_name) ? "blue" : "amber"}>{/\.(png|jpe?g)$/i.test(file.display_name) ? <ImageIcon size={18} /> : <FileText size={18} />}</i><div><b>{file.display_name}</b><small>{formatBytes(file.size_bytes)} · {file.indexed ? "indexed" : file.status}</small></div><em>LOCAL</em>{!activeTab?.taskId && <button className="file-remove" aria-label={`Remove ${file.display_name}`} onClick={(event) => { event.stopPropagation(); void removeFile(file); }}><X size={14} /></button>}</div>)}{!files.length && <p className="empty-copy">No local files uploaded yet.</p>}</div>
         {taskMode !== "coding" && readyBases.length > 0 && <div className="kb-picker"><span className="eyebrow">KNOWLEDGE CONTEXT</span>{readyBases.map((base) => <label key={base.id}><input type="checkbox" checked={selectedKnowledgeBaseIds.has(base.id)} disabled={Boolean(activeTab?.taskId)} onChange={() => toggleKnowledgeBase(base.id)} /><span>{base.name}</span><small>v{base.active_index_version}</small></label>)}</div>}
@@ -386,7 +416,9 @@ export function Workbench() {
     </div>
     <div className="results">
       <section className="panel finding"><div><span className="eyebrow">AGENT RESULT</span><h2>{task ? `${modelName} · ${task.status}` : "Run a task to generate a governed response"}</h2></div>{task?.status === "completed" && <Badge tone="green">VERIFIED LOCAL</Badge>}<div className="response-text">{run?.error_message ? <span className="error-copy">{run.error_message}</span> : run?.result_text ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayableMarkdown(run.result_text)}</ReactMarkdown> : "The grounded result will appear here after routing, tool access, and local inference complete."}</div>{Boolean(run?.citations.length) && <div className="result-sources"><span className="eyebrow">USED SOURCES</span>{run?.citations.map((citation) => <div key={citation.source_id}><Badge tone="blue">{citation.source_id}</Badge><span><b>{citation.display_name}</b><small>Page {citation.page_start}{citation.page_end !== citation.page_start ? `–${citation.page_end}` : ""} · {citation.retrieval_mode.replaceAll("_", " ")}{citation.knowledge_base_name ? ` · ${citation.knowledge_base_name}` : ""}</small></span></div>)}</div>}</section>
-      <section className="panel artifact artifact-list"><i><FileText size={25} /></i><div><span className="eyebrow">VALIDATED ARTIFACTS</span>{run?.artifacts.length ? run.artifacts.map((item) => <div className="artifact-item" key={item.id}><span><h2>{item.display_name}</h2><small>{formatBytes(item.size_bytes)} · {item.validation_status} · SHA-256 {item.sha256.slice(0, 12)}…</small></span><a className="artifact-download" href={`${new URL(API_URL).origin}${item.download_url}`}><Download size={16} /> Download</a></div>) : <><h2>No artifact generated yet</h2><small>Artifacts are generated atomically after a successful task.</small></>}</div></section>
+      <section className="panel artifact artifact-list"><i><FileText size={25} /></i><div><span className="eyebrow">VALIDATED ARTIFACTS</span>{run?.artifacts.length ? run.artifacts.map((item) => <div className="artifact-item" key={item.id}><span><h2>{item.display_name}</h2><small>{formatBytes(item.size_bytes)} · {item.validation_status} · SHA-256 {item.sha256.slice(0, 12)}…</small></span><div className="artifact-actions"><button className="artifact-preview-button" disabled={artifactPreview.isPending} onClick={() => artifactPreview.mutate(item.id)}><Eye size={15} /> Preview</button><a className="artifact-download" href={`${new URL(API_URL).origin}${item.download_url}`}><Download size={16} /> Download</a></div></div>) : <><h2>No artifact generated yet</h2><small>Artifacts are generated atomically after a successful task.</small></>}</div></section>
     </div>
+    {artifactPreview.data && <div className="artifact-preview-backdrop" role="presentation" onClick={() => artifactPreview.reset()}><section className="artifact-preview-panel" role="dialog" aria-modal="true" aria-labelledby="artifact-preview-title" onClick={(event) => event.stopPropagation()}><header><div><span className="eyebrow">SAFE READ-ONLY PREVIEW</span><h2 id="artifact-preview-title">{artifactPreview.data.display_name}</h2><small>{artifactPreview.data.preview_type} · generated locally{artifactPreview.data.truncated ? " · preview truncated" : ""}</small></div><button aria-label="Close artifact preview" onClick={() => artifactPreview.reset()}><X size={17} /></button></header><pre>{artifactPreview.data.content}</pre></section></div>}
+    {artifactPreview.error instanceof Error && <div className="api-error" role="alert">{artifactPreview.error.message}</div>}
   </>;
 }

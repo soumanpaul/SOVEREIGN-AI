@@ -1,8 +1,10 @@
 
 
 # Today todo's
-- all three workflows -> Working
-- 3 test datasets for demo with new Org
+- [x] Plan 3 test datasets for demo with a new organization
+- [x] Build and validate `presentation-v1.0.0` datasets and manifest
+-  screenshots, 3-minute demo and backup recording.
+
 - PPT final
 
 - Prepare my Speech
@@ -17,4 +19,3 @@
 
 - model manger - automatic model Up grade and down greade agent
 - initial setup plans
-

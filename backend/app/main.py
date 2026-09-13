@@ -1,10 +1,11 @@
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.responses import Response as StarletteResponse
 
 from app.api.routes import auth, health, inference, knowledge, models, security, tasks
 from app.core.config import get_settings
@@ -36,6 +37,42 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Idempotency-Key"],
 )
+
+
+@app.middleware("http")
+async def enforce_origin_and_security_headers(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[StarletteResponse]],
+) -> StarletteResponse:
+    origin = request.headers.get("origin")
+    unsafe_origin = (
+        request.method in {"POST", "PATCH", "PUT", "DELETE"}
+        and origin
+        and origin != settings.frontend_origin
+    )
+    if unsafe_origin:
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": {
+                    "code": "ORIGIN_DENIED",
+                    "message": "The request origin is not allowed.",
+                    "correlation_id": str(uuid.uuid4()),
+                    "retryable": False,
+                    "details": {},
+                }
+            },
+        )
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.exception_handler(AppError)
