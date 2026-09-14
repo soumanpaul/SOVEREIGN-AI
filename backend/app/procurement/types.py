@@ -52,4 +52,3 @@ class ProcurementComparison(BaseModel):
     recommended_vendor: str | None
     recommendation_basis: str
     warnings: list[str] = Field(default_factory=list)
-

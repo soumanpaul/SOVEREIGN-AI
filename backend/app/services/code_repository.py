@@ -72,7 +72,14 @@ def _safe_relative(raw: str) -> PurePosixPath:
     while normalized.startswith("./"):
         normalized = normalized[2:]
     path = PurePosixPath(normalized)
-    if not normalized or path.is_absolute() or ".." in path.parts:
+    if (
+        not normalized
+        or len(normalized) > 240
+        or any(character in normalized for character in ("\x00", "\n", "\r"))
+        or re.match(r"^[A-Za-z]:/", normalized)
+        or path.is_absolute()
+        or ".." in path.parts
+    ):
         raise AppError("REPOSITORY_PATH_DENIED", "A repository path is unsafe.", 422)
     if any(part in IGNORED_PARTS for part in path.parts):
         raise AppError(
@@ -228,13 +235,58 @@ def snapshot_repository(root: Path, max_chars: int) -> dict[str, str]:
     return snapshot
 
 
+def repository_catalog(root: Path) -> list[dict[str, object]]:
+    """Return bounded metadata only; repository contents never leave this boundary."""
+    catalog: list[dict[str, object]] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.is_symlink():
+            continue
+        relative = path.relative_to(root).as_posix()
+        safe = _safe_relative(relative)
+        catalog.append(
+            {
+                "path": safe.as_posix(),
+                "size_bytes": path.stat().st_size,
+                "immutable": is_verification_path(relative),
+            }
+        )
+    return catalog
+
+
+def read_repository_file(root: Path, raw_path: str, max_chars: int) -> tuple[str, bool]:
+    relative = _safe_relative(raw_path)
+    target = _contained(root, relative)
+    if target.is_symlink() or not target.is_file():
+        raise AppError(
+            "REPOSITORY_FILE_DENIED", "The requested repository file is unavailable.", 404
+        )
+    text = target.read_text(encoding="utf-8")
+    return text[:max_chars], len(text) > max_chars
+
+
+def search_repository(root: Path, query: str, limit: int) -> list[dict[str, object]]:
+    """Perform a literal, case-insensitive search without shell or regex interpretation."""
+    matches: list[dict[str, object]] = []
+    needle = query.casefold()
+    for item in repository_catalog(root):
+        path = str(item["path"])
+        content, _ = read_repository_file(root, path, 10 * 1024 * 1024)
+        for line_number, line in enumerate(content.splitlines(), start=1):
+            if needle in line.casefold():
+                matches.append({"path": path, "line": line_number, "text": line[:300]})
+                if len(matches) >= limit:
+                    return matches
+    return matches
+
+
 def repository_prompt(
     goal: str,
     files: dict[str, str],
     previous_failure: str | None = None,
 ) -> str:
     content = "\n\n".join(
-        f"FILE: {path}\n" + "\n".join(
+        f"FILE: {path}\n"
+        + "\n".join(
             f"{number:04d}|{line}" for number, line in enumerate(text.splitlines(), start=1)
         )
         for path, text in files.items()
@@ -364,10 +416,7 @@ def _apply_line_range_edits(root: Path, proposal: str) -> list[str]:
         replacement = match.group("replacement").splitlines()
         original_indent = lines[start - 1][: len(lines[start - 1]) - len(lines[start - 1].lstrip())]
         if original_indent and replacement and replacement[0] == replacement[0].lstrip():
-            replacement = [
-                original_indent + line if line else line
-                for line in replacement
-            ]
+            replacement = [original_indent + line if line else line for line in replacement]
         edits.append((start - 1, end, replacement))
         by_path[relative] = (target, lines, edits)
 

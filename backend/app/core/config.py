@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     sandbox_max_patch_chars: int = Field(default=100_000, ge=1_000, le=500_000)
     sandbox_repository_context_chars: int = Field(default=32_000, ge=2_000, le=100_000)
     sandbox_max_attempts: int = Field(default=6, ge=1, le=8)
+    react_coding_enabled: bool = False
+    react_document_enabled: bool = False
+    react_multimodal_enabled: bool = False
+    react_max_total_model_calls: int = Field(default=6, ge=1, le=12)
+    react_max_total_tokens: int = Field(default=12_000, ge=1_000, le=100_000)
+    react_max_observation_chars: int = Field(default=6_000, ge=500, le=20_000)
+    react_repository_file_chars: int = Field(default=12_000, ge=500, le=50_000)
+    react_policy_version: str = "coding-v1"
 
 
 @lru_cache
