@@ -12,7 +12,13 @@ from app.core.config import Settings
 from app.core.errors import AppError
 from app.db.models import KnowledgeBase, StoredFile
 from app.model_providers.ollama import OllamaModelProvider
-from app.services.code_repository import apply_unified_diff, snapshot_repository
+from app.services.code_repository import (
+    apply_unified_diff,
+    read_repository_file,
+    repository_catalog,
+    search_repository,
+    snapshot_repository,
+)
 from app.services.document_extraction import ensure_document_extracted
 from app.services.file_storage import resolve_storage_key
 from app.services.qdrant_store import QdrantStore
@@ -35,6 +41,16 @@ class SearchKnowledgeArgs(BaseModel):
 class ReadRepositoryArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
     max_chars: int = Field(default=32_000, ge=1_000, le=100_000)
+
+
+class ListRepositoryArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ReadRepositoryFileArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    path: str = Field(min_length=1, max_length=240)
+    max_chars: int = Field(default=12_000, ge=500, le=50_000)
 
 
 class SearchFilesArgs(BaseModel):
@@ -175,6 +191,40 @@ class ReadRepositoryTool:
         )
 
 
+class ListRepositoryTool:
+    name = "list_repository"
+    input_model: type[BaseModel] = ListRepositoryArgs
+
+    async def execute(self, context: ToolContext, arguments: BaseModel) -> ToolResult:
+        ListRepositoryArgs.model_validate(arguments)
+        started = time.perf_counter()
+        files = repository_catalog(_repository_root(context))
+        return ToolResult(
+            "completed",
+            f"Listed {len(files)} permitted repository files without reading contents.",
+            {"files": files, "file_count": len(files)},
+            int((time.perf_counter() - started) * 1000),
+        )
+
+
+class ReadRepositoryFileTool:
+    name = "read_repository_file"
+    input_model: type[BaseModel] = ReadRepositoryFileArgs
+
+    async def execute(self, context: ToolContext, arguments: BaseModel) -> ToolResult:
+        args = ReadRepositoryFileArgs.model_validate(arguments)
+        started = time.perf_counter()
+        content, truncated = read_repository_file(
+            _repository_root(context), args.path, args.max_chars
+        )
+        return ToolResult(
+            "completed",
+            f"Read {args.path} within the configured character bound.",
+            {"path": args.path, "content": content, "truncated": truncated},
+            int((time.perf_counter() - started) * 1000),
+        )
+
+
 class SearchFilesTool:
     name = "search_files"
     input_model: type[BaseModel] = SearchFilesArgs
@@ -182,17 +232,7 @@ class SearchFilesTool:
     async def execute(self, context: ToolContext, arguments: BaseModel) -> ToolResult:
         args = SearchFilesArgs.model_validate(arguments)
         started = time.perf_counter()
-        matches: list[dict[str, object]] = []
-        for path, content in snapshot_repository(
-            _repository_root(context), context.settings.sandbox_repository_context_chars
-        ).items():
-            for line_number, line in enumerate(content.splitlines(), start=1):
-                if args.query.casefold() in line.casefold():
-                    matches.append({"path": path, "line": line_number, "text": line[:300]})
-                    if len(matches) >= args.limit:
-                        break
-            if len(matches) >= args.limit:
-                break
+        matches = search_repository(_repository_root(context), args.query, args.limit)
         return ToolResult(
             "completed",
             f"Found {len(matches)} bounded repository matches.",
@@ -256,7 +296,10 @@ class ToolRegistry:
             "analyze_visual_pages",
         },
         "coding_agent": {
+            "list_repository",
+            "read_repository_file",
             "read_repository",
+            "search_repository",
             "search_files",
             "apply_patch",
             "run_python_tests",
@@ -269,6 +312,9 @@ class ToolRegistry:
             "read_file": ReadFileTool(),
             "search_knowledge": SearchKnowledgeTool(),
             "read_repository": ReadRepositoryTool(),
+            "list_repository": ListRepositoryTool(),
+            "read_repository_file": ReadRepositoryFileTool(),
+            "search_repository": SearchFilesTool(),
             "search_files": SearchFilesTool(),
             "apply_patch": ApplyPatchTool(),
             "run_python_tests": RunPythonTestsTool(),

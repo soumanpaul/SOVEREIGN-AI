@@ -14,7 +14,7 @@ It covers:
 
 # Constrained ReAct and Agent Loop Engineering Plan
 
-Status: proposed; no implementation is authorized by this document  
+Status: Phase 1 coding milestone implemented behind a disabled-by-default feature flag; Phases 2–5 remain planned
 Target deployment: local-first Ollama node, beginning with the M5 16 GB profile  
 Primary objective: improve workflow adaptability and recovery without weakening deterministic policy, isolation, evidence, or audit controls
 
@@ -667,6 +667,33 @@ Do not start document, multimodal, approval, or distributed-worker changes until
 3. bounded iterations and model calls;
 4. understandable trace output without chain-of-thought;
 5. acceptable latency and memory on the M5 16 GB profile.
+
+## Implementation record — 2026-09-14
+
+The recommended first milestone is now implemented. The rollout flag remains off until the
+fixed-dataset evaluation and M5 measurements are completed.
+
+Implemented components:
+
+- strict, extra-forbidden JSON action envelopes and per-action argument schemas;
+- an application-controlled loop with iteration, model-call, tool-call, invalid-output,
+  cancellation, deadline, and repeated action/observation limits;
+- repository metadata listing plus targeted, path-contained file reads and literal searches;
+- bounded and redacted observations that explicitly report truncation;
+- automatic syntax validation, rollback of syntactically invalid candidates, fixed-command
+  sandbox verification, and deterministic completion validation;
+- persisted policy snapshots, action lifecycle audit events, user-readable decision summaries,
+  and sanitized observation steps;
+- aggregate iteration, token, model-call, and tool-call metrics in the sandbox report;
+- deterministic workflow fallback through `REACT_CODING_ENABLED=false`.
+
+The human-review action contract is reserved for Phase 3 but is intentionally absent from the
+active coding allowlist until a durable `waiting_approval` state and authenticated resume API
+exist. An unavailable pause action is less safe than a clear bounded failure.
+
+Deliberate scope boundary: document retrieval ReAct, approval resumption, selective multimodal
+actions, and distributed worker hardening were not activated. This follows the milestone gate
+above and avoids presenting unmeasured autonomy as production-ready behavior.
 
 ## Final recommendation
 

@@ -44,6 +44,9 @@ from app.services.hybrid_retrieval import gather_hybrid_evidence
 from app.services.multimodal import enrich_multimodal_inputs
 from app.services.procurement import compare_procurement, comparison_markdown
 from app.services.sandbox_client import SandboxClient
+from app.tasks.coding_react import execute_coding_react_loop
+from app.tasks.react_actions import ActionEnvelope
+from app.tasks.react_observations import Observation
 from app.tools.registry import ToolContext, ToolRegistry
 
 _worker_lock = asyncio.Lock()
@@ -113,6 +116,8 @@ def _coding_failure_summary(
             f"Error: {error_line}{guidance}"
         )[:max_chars]
     return combined[-max_chars:]
+
+
 TERMINAL = {"completed", "failed", "cancelled", "timed_out"}
 
 
@@ -419,14 +424,91 @@ async def execute_coding_workflow(
         failure = (
             None
             if baseline.status == "completed"
-            else _coding_failure_summary(
-                baseline.data, original, settings.max_tool_output_chars
-            )
+            else _coding_failure_summary(baseline.data, original, settings.max_tool_output_chars)
         )
         attempts: list[dict[str, object]] = []
         all_changed: set[str] = set()
         final_test = baseline
-        for attempt in range(1, settings.sandbox_max_attempts + 1):
+        attempt_start = 1
+        react_metrics: dict[str, object] | None = None
+        if settings.react_coding_enabled:
+            policy_snapshot = {
+                "enabled": True,
+                "policy_version": settings.react_policy_version,
+                "action_schema_version": "coding-actions-v1",
+                "prompt_template_version": "coding-react-v1",
+                "max_model_calls": settings.react_max_total_model_calls,
+                "max_total_tokens": settings.react_max_total_tokens,
+                "max_iterations": min(
+                    settings.sandbox_max_attempts, settings.react_max_total_model_calls
+                ),
+            }
+            run.route = {**run.route, "react": policy_snapshot}
+            add_audit(session, task, run, "REACT_LOOP_CONFIGURED", policy_snapshot)
+            session.commit()
+
+            def record_react_event(event_type: str, payload: dict[str, object]) -> None:
+                if event_type == "ACTION_REJECTED":
+                    run.retry_count += 1
+                add_audit(session, task, run, event_type, payload)
+                session.commit()
+
+            def record_react_observation(
+                iteration: int, action: ActionEnvelope, observation: Observation
+            ) -> None:
+                if observation.status == "failed":
+                    run.retry_count += 1
+                add_step(
+                    session,
+                    run,
+                    "react_iteration",
+                    f"{action.action.replace('_', ' ').title()} · {observation.status}",
+                    observation.summary,
+                    tool_name=observation.tool,
+                    input_data={
+                        "iteration": iteration,
+                        "action": action.action,
+                        "reason_summary": action.reason_summary,
+                        "expected_evidence": action.expected_evidence,
+                        "confidence": action.confidence,
+                    },
+                    output_data=observation.model_dump(),
+                    duration_ms=observation.duration_ms,
+                    status="failed" if observation.status == "failed" else "completed",
+                )
+
+            react_result = await execute_coding_react_loop(
+                goal=task.goal,
+                original=original,
+                baseline=baseline,
+                verification_command=verification_command,
+                context=context,
+                registry=registry,
+                provider=provider,
+                model_key=model_key,
+                settings=settings,
+                record_event=record_react_event,
+                record_observation=record_react_observation,
+                check_boundary=lambda: check_run(session, task, run),
+            )
+            final_test = react_result.final_test
+            attempts = react_result.attempts
+            all_changed = react_result.changed_files
+            react_metrics = {
+                "policy_version": settings.react_policy_version,
+                "terminal_reason": react_result.loop.terminal_reason,
+                "iterations": react_result.loop.iterations,
+                "model_calls": react_result.loop.model_calls,
+                "tool_calls": react_result.loop.tool_calls,
+                "total_tokens": react_result.loop.total_tokens,
+                "prompt_tokens": sum(chat.prompt_tokens or 0 for chat in react_result.loop.chats),
+                "completion_tokens": sum(
+                    chat.completion_tokens or 0 for chat in react_result.loop.chats
+                ),
+            }
+            attempt_start = settings.sandbox_max_attempts + 1
+
+        for attempt in range(attempt_start, settings.sandbox_max_attempts + 1):
             files = snapshot_repository(working_root, settings.sandbox_repository_context_chars)
             prompt = repository_prompt(task.goal, files, failure)
             chat = await provider.chat(
@@ -622,6 +704,8 @@ async def execute_coding_workflow(
             "verified_sha256": repository_digest(final),
             "passed": True,
         }
+        if react_metrics is not None:
+            report["react"] = react_metrics
         registry.authorize(run.agent_profile, "publish_code_artifacts")
         published = publish_code_artifacts(
             settings.data_root,
@@ -974,9 +1058,7 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
         check_run(session, task, run)
 
         procurement = (
-            compare_procurement(evidence)
-            if classification.task_type == "procurement"
-            else None
+            compare_procurement(evidence) if classification.task_type == "procurement" else None
         )
         if procurement and not {"xlsx", "docx"}.issubset(task.requested_outputs):
             raise AppError(
@@ -1313,9 +1395,7 @@ async def task_worker_loop() -> None:
             continue
         _worker_wakeup.clear()
         with suppress(TimeoutError):
-            await asyncio.wait_for(
-                _worker_wakeup.wait(), timeout=settings.task_worker_poll_seconds
-            )
+            await asyncio.wait_for(_worker_wakeup.wait(), timeout=settings.task_worker_poll_seconds)
 
 
 async def start_task_worker() -> asyncio.Task[None]:

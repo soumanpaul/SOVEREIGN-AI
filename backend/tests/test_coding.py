@@ -11,10 +11,13 @@ from app.db.models import StoredFile, Workspace
 from app.services.code_repository import (
     apply_unified_diff,
     materialize_repository,
+    read_repository_file,
+    repository_catalog,
     repository_diff,
     repository_prompt,
     resolve_verification_command,
     restore_repository_files,
+    search_repository,
     snapshot_repository,
 )
 from app.tasks.runtime import _coding_failure_summary
@@ -31,10 +34,25 @@ def test_repository_prompt_only_lists_source_code_as_implementation_targets() ->
         },
     )
 
-    targets = prompt.split("IMPLEMENTATION TARGETS:\n", 1)[1].split(
-        "\n\nIMMUTABLE", 1
-    )[0]
+    targets = prompt.split("IMPLEMENTATION TARGETS:\n", 1)[1].split("\n\nIMMUTABLE", 1)[0]
     assert targets == "monitor.py"
+
+
+def test_targeted_repository_inspection_is_bounded(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "app.py").write_text("value = 123\nprint(value)\n", encoding="utf-8")
+    (root / "test_app.py").write_text("assert True\n", encoding="utf-8")
+
+    catalog = repository_catalog(root)
+    content, truncated = read_repository_file(root, "app.py", 11)
+    matches = search_repository(root, "123", 5)
+
+    assert {item["path"] for item in catalog} == {"app.py", "test_app.py"}
+    assert next(item for item in catalog if item["path"] == "test_app.py")["immutable"] is True
+    assert content == "value = 123"
+    assert truncated is True
+    assert matches == [{"path": "app.py", "line": 1, "text": "value = 123"}]
 
 
 def stored_archive(tmp_path: Path, workspace: Workspace, members: dict[str, str]) -> StoredFile:
@@ -65,9 +83,7 @@ def stored_archive(tmp_path: Path, workspace: Workspace, members: dict[str, str]
         ("compile", ["app.py"], "compile"),
     ],
 )
-def test_resolve_verification_command(
-    requested: str, paths: list[str], expected: str
-) -> None:
+def test_resolve_verification_command(requested: str, paths: list[str], expected: str) -> None:
     assert resolve_verification_command(requested, paths) == expected
 
 
@@ -211,11 +227,7 @@ def test_patch_applies_exact_search_replace_blocks_atomically(tmp_path: Path) ->
 
     changed = apply_unified_diff(
         root,
-        "<<<<<<< SEARCH app.py\n"
-        "tax = '0.18'\n"
-        "=======\n"
-        "tax = 0.18\n"
-        ">>>>>>> REPLACE\n",
+        "<<<<<<< SEARCH app.py\ntax = '0.18'\n=======\ntax = 0.18\n>>>>>>> REPLACE\n",
     )
 
     assert changed == ["app.py"]
@@ -231,11 +243,7 @@ def test_patch_rejects_non_unique_search_replace_text(tmp_path: Path) -> None:
     with pytest.raises(AppError) as denied:
         apply_unified_diff(
             root,
-            "<<<<<<< SEARCH app.py\n"
-            "value = 1\n"
-            "=======\n"
-            "value = 2\n"
-            ">>>>>>> REPLACE\n",
+            "<<<<<<< SEARCH app.py\nvalue = 1\n=======\nvalue = 2\n>>>>>>> REPLACE\n",
         )
 
     assert denied.value.code == "PATCH_CONTEXT_MISMATCH"
