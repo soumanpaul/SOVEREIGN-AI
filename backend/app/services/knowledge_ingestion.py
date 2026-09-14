@@ -34,7 +34,9 @@ async def run_ingestion(job_id: uuid.UUID) -> None:
             return
         job.status, job.started_at, kb.status = "running", _now(), "indexing"
         session.commit()
-        provider = OllamaModelProvider(settings.ollama_base_url)
+        provider = OllamaModelProvider(
+            settings.ollama_base_url, context_tokens=settings.model_context_tokens
+        )
         vector_store = QdrantStore(settings.qdrant_url, settings.qdrant_collection)
         all_points: list[dict[str, object]] = []
         dimensions: int | None = None

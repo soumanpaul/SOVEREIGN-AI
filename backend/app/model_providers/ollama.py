@@ -16,9 +16,15 @@ def _nanoseconds_to_ms(value: object) -> int | None:
 
 
 class OllamaModelProvider:
-    def __init__(self, base_url: str, timeout_seconds: float = 120.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        timeout_seconds: float = 120.0,
+        context_tokens: int = 8_192,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = httpx.Timeout(timeout_seconds, connect=5.0)
+        self._context_tokens = context_tokens
 
     async def _installed_models(self) -> tuple[list[str], int]:
         started = time.perf_counter()
@@ -56,7 +62,11 @@ class OllamaModelProvider:
             "stream": False,
             "keep_alive": request.keep_alive,
             "messages": [message],
-            "options": {"temperature": request.temperature, "seed": request.seed},
+            "options": {
+                "temperature": request.temperature,
+                "seed": request.seed,
+                "num_ctx": self._context_tokens,
+            },
         }
         started = time.perf_counter()
         try:

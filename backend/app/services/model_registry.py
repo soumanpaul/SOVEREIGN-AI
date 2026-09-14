@@ -93,17 +93,27 @@ def set_model_enabled(session: Session, model_id: uuid.UUID, enabled: bool) -> R
     return model
 
 
-def select_general_model(session: Session) -> RegisteredModel:
+async def select_general_model(session: Session, provider: OllamaModelProvider) -> RegisteredModel:
     statement = (
         select(RegisteredModel)
         .where(RegisteredModel.enabled.is_(True))
         .order_by(RegisteredModel.priority.desc(), RegisteredModel.model_key)
     )
     models = session.scalars(statement).all()
-    model = next((item for item in models if "general" in item.capabilities), None)
-    if model is None:
-        raise AppError("NO_GENERAL_MODEL", "No enabled general model is configured.", 503)
-    return model
+    candidates = [
+        item
+        for item in models
+        if "general" in item.capabilities and "vision" not in item.capabilities
+    ]
+    for model in candidates:
+        if (await provider.health(model.model_key)).ready:
+            return model
+    raise AppError(
+        "NO_GENERAL_MODEL",
+        "No healthy local general model is available.",
+        503,
+        retryable=True,
+    )
 
 
 async def check_model_health(

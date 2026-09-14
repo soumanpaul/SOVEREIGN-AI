@@ -19,7 +19,7 @@ async def chat(
     model = (
         get_model(session, request.model_id)
         if request.model_id is not None
-        else select_general_model(session)
+        else await select_general_model(session, provider)
     )
     content, duration_ms = await run_inference(
         model=model,

@@ -143,8 +143,8 @@ async def test_ingestion_extracts_embeds_indexes_and_activates(
     indexed_points: list[dict[str, object]] = []
 
     class FakeProvider:
-        def __init__(self, _base_url: str) -> None:
-            pass
+        def __init__(self, _base_url: str, *, context_tokens: int = 8_192) -> None:
+            assert context_tokens == 8_192
 
         async def embed(self, texts: list[str], _model_key: str) -> EmbeddingResult:
             return EmbeddingResult([[float(len(text)), 1.0, 0.5] for text in texts], 1)

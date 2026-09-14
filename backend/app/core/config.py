@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     ollama_base_url: str = "http://localhost:11434"
     model_keep_alive: str = "2m"
+    model_context_tokens: int = Field(default=8_192, ge=2_048, le=32_768)
     model_health_ttl_seconds: int = 30
     max_concurrent_model_requests: int = Field(default=1, ge=1, le=4)
     data_root: Path = Path("data")

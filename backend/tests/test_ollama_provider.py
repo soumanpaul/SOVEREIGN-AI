@@ -56,6 +56,7 @@ async def test_chat_sends_images_only_for_multimodal_requests(
     messages = captured["messages"]
     assert isinstance(messages, list)
     assert messages[0]["images"] == ["aW1hZ2U="]
+    assert captured["options"]["num_ctx"] == 8_192  # type: ignore[index]
 
 
 @pytest.mark.asyncio

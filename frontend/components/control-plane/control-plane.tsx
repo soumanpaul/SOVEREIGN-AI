@@ -76,7 +76,7 @@ export function ControlPlane({ children }: { children: ReactNode }) {
 
   return <div className="shell">
     <aside className={drawer ? "sidebar open" : "sidebar"}>
-      <div className="brand"><i><ShieldCheck size={21} /></i><div><b>SOVEREIGN<span> AI</span></b><small>LOCAL AI CONTROL PLANE</small></div></div>
+      <div className="brand"><i><ShieldCheck size={21} /></i><div><b>SovereignForge<span>AI</span></b><small>LOCAL AI CONTROL PLANE</small></div></div>
       <nav>{nav.map(({ id, href, label, icon: Icon }) => <Link className={pathname === href ? "active" : ""} onClick={() => setDrawer(false)} href={href} key={id}><Icon size={18} />{label}{id === "security" && <em />}</Link>)}</nav>
       <div className="node">
         <div><i className={`dot ${readiness.data?.status === "ok" ? "" : "amber"}`} /><b>Node SF-01</b><small>{readiness.isPending ? "Checking local services…" : readiness.data?.status === "ok" ? "All systems operational" : "Service attention required"}</small></div>

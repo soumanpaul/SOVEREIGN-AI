@@ -745,7 +745,9 @@ async def _execute_claimed_run(run_id: uuid.UUID) -> None:
         session.commit()
         check_run(session, task, run)
 
-        provider = OllamaModelProvider(settings.ollama_base_url)
+        provider = OllamaModelProvider(
+            settings.ollama_base_url, context_tokens=settings.model_context_tokens
+        )
         decision = await route_model(session, classification, provider)
         run.selected_model_id = decision.model.id
         run.route = decision.data

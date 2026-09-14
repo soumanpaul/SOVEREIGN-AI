@@ -13,7 +13,9 @@ AppSettings = Annotated[Settings, Depends(get_settings)]
 
 
 def get_ollama_provider(settings: AppSettings) -> OllamaModelProvider:
-    return OllamaModelProvider(settings.ollama_base_url)
+    return OllamaModelProvider(
+        settings.ollama_base_url, context_tokens=settings.model_context_tokens
+    )
 
 
 OllamaProvider = Annotated[OllamaModelProvider, Depends(get_ollama_provider)]
