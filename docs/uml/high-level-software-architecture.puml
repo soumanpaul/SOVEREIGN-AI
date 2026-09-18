@@ -1,0 +1,78 @@
+@startuml high-level-software-architecture
+!pragma layout smetana
+title SovereignForgeAI | Software Architecture
+left to right direction
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 17
+skinparam titleFontSize 25
+skinparam componentStyle uml2
+skinparam roundCorner 14
+skinparam nodesep 38
+skinparam ranksep 45
+skinparam ArrowColor #526580
+skinparam ArrowThickness 1.5
+skinparam componentBackgroundColor #EAF5F3
+skinparam componentBorderColor #24867A
+skinparam databaseBackgroundColor #EFF3FA
+skinparam databaseBorderColor #567298
+skinparam rectangleBorderColor #B9C8D1
+skinparam rectangleBackgroundColor #FFFFFF
+skinparam component<<planned>> {
+  BackgroundColor #FFF3DF
+  BorderColor #BD812C
+  BorderStyle dashed
+}
+hide stereotype
+
+actor "Industrial teams" as people
+
+rectangle "CUSTOMER INFRASTRUCTURE" {
+  component "Web Workbench\nNext.js" as web
+  component "API + Access Control\nFastAPI" as api
+  component "Agent Orchestrator\nRouting · Policy · Audit" as engine #CDEBE5
+
+  together {
+    component "Knowledge Pipeline\nExtraction · OCR · RAG" as knowledge
+    component "Local Models\nOllama" as models
+    component "Governed Tools" as tools
+  }
+
+  together {
+    database "Metadata\nPostgreSQL" as db
+    database "Vector Index\nQdrant" as vectors
+    folder "Files + Artifacts" as files #EFF3FA
+    node "Code Sandbox\nNo network" as sandbox #EFF3FA
+  }
+
+  component "SSO + Approvals" as identity <<planned>>
+  component "Enterprise Connectors" as connectors <<planned>>
+}
+
+artifact "Decision Packs\nDOCX · XLSX · Patches" as outputs #EAF5F3
+cloud "CMMS / ERP" as enterprise #FFF3DF
+
+people --> web
+web --> api : REST
+api --> engine : tasks
+api --> knowledge : uploads
+api --> db
+identity ..> api
+engine --> knowledge : evidence
+engine --> models : inference
+engine --> tools : actions
+knowledge --> vectors
+knowledge --> files
+knowledge --> models : embed
+tools --> sandbox : verify
+tools --> files : publish
+files --> outputs
+enterprise ..> connectors
+connectors ..> knowledge : sync
+
+legend bottom
+  <color:#24867A>■</color> Current prototype     <color:#BD812C>■</color> Planned additions
+endlegend
+@enduml

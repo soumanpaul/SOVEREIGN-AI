@@ -1,0 +1,80 @@
+@startuml product-target-architecture
+!pragma layout smetana
+title SovereignForgeAI — high-level target product architecture
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 15
+skinparam packageStyle rectangle
+skinparam ArrowColor #526071
+skinparam componentBorderColor #087F75
+skinparam componentBackgroundColor #E8F6F2
+skinparam packageBorderColor #A7B5BD
+skinparam nodesep 45
+skinparam ranksep 55
+
+actor "Engineer / analyst" as user
+actor "Reviewer / administrator" as reviewer
+component "Maintenance and document systems\n[NEXT] read-only integration\n[LATER] approved write-back" as enterprise #FFF2DE
+
+rectangle "CUSTOMER-CONTROLLED DATA PLANE — on-premise; private-cloud option planned" {
+  component "[NOW] Workbench\nFiles · tasks · evidence · artifacts" as ui
+  component "[NEXT] Review inbox + identity\nSSO · source ACLs · approval/resume" as review #FFF2DE
+  component "[NEXT] Connector gateway\nScoped identities · revision sync\n[LATER] separate write executor" as connectors #FFF2DE
+
+  package "Evidence and workflow engine" {
+    component "[NOW] Ingestion\nPDF · OCR · image understanding\nPage provenance · versioned index" as ingest
+    component "[NOW] Local retrieval\nEmbeddings · hybrid evidence\n[NEXT] ACL filtering + freshness" as rag
+    component "[NOW] Governed runtime\nRouting · budgets · tool permissions\n[NEXT] checkpoints + action ledger" as runtime
+    component "[NOW] Workflow capabilities\nInspection · procurement · coding\n[NEXT] versioned workflow templates" as workflows
+    component "[NOW] Validation + outputs\nDOCX · XLSX · patch/test evidence\n[NEXT] versioned approval evidence" as outputs
+  }
+
+  package "Local execution and persistence" {
+    component "[NOW] Ollama\nGeneration · vision · embeddings\n[LATER] resource-aware serving" as models
+    component "[NOW] Sandboxed verification\nBounded, network-disabled jobs\n[NEXT] isolate privileged runner" as sandbox
+    database "[NOW] PostgreSQL\nTasks · metadata · audit\n[NEXT] approvals + action receipts" as pg
+    database "[NOW] Qdrant + files\nVectors · source files · artifacts\n[NEXT] retention + restore" as data
+  }
+
+  component "[NOW] Health + sovereignty evidence\n[NEXT] local evaluations · metrics · signed updates\n[LATER] multi-site operational controls" as ops
+}
+
+rectangle "OPTIONAL MANAGEMENT PLANE — LATER" #FFF2DE {
+  component "Signed release distribution\nLicense metadata\nOpt-in, content-free health schema" as fleet #FFF2DE
+}
+
+user --> ui
+reviewer --> review
+enterprise --> connectors : approved read scope
+connectors ..> enterprise : LATER: approved write only
+ui --> ingest : inputs
+ui --> runtime : goal + references
+connectors --> ingest : revision + ACL
+ingest --> rag
+rag --> runtime : authorized evidence
+review --> runtime : bound approval decision
+runtime --> workflows
+workflows --> outputs
+workflows --> models
+workflows --> sandbox : coding only
+runtime --> pg
+ingest --> data
+outputs --> data
+runtime ..> ops : local events
+ops ..> fleet : optional outbound pull / allowlisted health
+
+note bottom of fleet
+  No documents, prompts, embeddings or tool output required.
+  Air-gapped sites import signed bundles manually.
+  Management plane cannot initiate customer task execution.
+end note
+legend bottom
+  NOW = current prototype; not a production certification.
+  NEXT / LATER = proposed, not implemented. Amber = entirely planned component.
+  Mixed green components list their future extensions explicitly.
+  Arrows show logical interactions; this is not a network allowlist or microservice mandate.
+endlegend
+@enduml

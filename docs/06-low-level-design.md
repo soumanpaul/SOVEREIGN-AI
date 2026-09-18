@@ -1,5 +1,7 @@
 # Low-Level Design
 
+For UML diagrams of the implemented backend, see [Backend UML design](31-backend-uml-design.md): module dependencies, class contracts and use cases, with editable sources and rendered images. The package layout below is the original proposal and is not an exact map of the current code.
+
 ## Proposed backend package layout
 
 ```text

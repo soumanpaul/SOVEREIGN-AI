@@ -16,6 +16,8 @@ This folder is the implementation source of truth for **SovereignForge**, an on-
 | [04-architecture.md](04-architecture.md) | Architecture drivers, boundaries, deployment, major decisions | Architects, backend, DevOps |
 | [05-system-design.md](05-system-design.md) | Runtime flows, components, data movement, Mermaid diagrams | Engineering team |
 | [06-low-level-design.md](06-low-level-design.md) | Modules, interfaces, state machines, algorithms, error behavior | Implementers, reviewers |
+| [31-backend-uml-design.md](31-backend-uml-design.md) | Implemented backend module UML, class contracts and use cases; editable PlantUML, SVG and PNG | Backend, reviewers, presenters |
+| [32-product-architecture-and-roadmap.md](32-product-architecture-and-roadmap.md) | SIH product architecture slides, future enterprise design, commercial hypothesis and phased delivery gates | Presenters, product, engineering, investors |
 | [07-data-and-api-design.md](07-data-and-api-design.md) | Data model, API contracts, events, retention | Backend, frontend, QA |
 | [08-security-and-sovereignty.md](08-security-and-sovereignty.md) | Threat model, controls, trust boundaries, proof plan | Security, judges, DevOps |
 | [09-testing-and-evaluation.md](09-testing-and-evaluation.md) | Test pyramid, AI evaluation, quality gates, test cases | QA, engineering |

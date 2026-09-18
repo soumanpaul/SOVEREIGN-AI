@@ -1,0 +1,143 @@
+@startuml backend-contracts
+!pragma layout smetana
+title Backend LLD — tool, provider and ReAct contracts
+top to bottom direction
+set namespaceSeparator none
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #EEF4FF
+skinparam classBorderColor #365880
+skinparam ArrowColor #526580
+skinparam nodesep 35
+skinparam ranksep 55
+hide empty members
+
+package "app.tools.registry" {
+  interface AgentTool <<Protocol>> {
+    +name: str
+    +input_model: type[BaseModel]
+    +execute(context: ToolContext, arguments: BaseModel): ToolResult {async}
+  }
+  class ToolRegistry {
+    +permissions: dict
+    +tools: dict[str, AgentTool]
+    +authorize(profile: str, name: str): None
+    +execute(profile, name, raw_arguments, context): ToolResult {async}
+  }
+  class ToolContext <<frozen dataclass>> {
+    +workspace_id: UUID
+    +session: Session
+    +settings: Settings
+    +provider: OllamaModelProvider
+    +repository_root: Path | None
+    +sandbox_client: SandboxClient | None
+  }
+  class ToolResult <<frozen dataclass>> {
+    +status: str
+    +summary: str
+    +data: dict[str, Any]
+    +duration_ms: int
+  }
+  class RunPythonTestsTool {
+    +name = "run_python_tests"
+    +input_model = RunPythonTestsArgs
+    +execute(context, arguments): ToolResult {async}
+  }
+}
+
+package "app.model_providers" {
+  interface ModelProvider <<Protocol>> {
+    +chat(request: ChatRequest): ChatResult {async}
+    +health(model_key: str): ProviderHealth {async}
+    +embed(texts: list[str], model_key: str): EmbeddingResult {async}
+  }
+  class OllamaModelProvider {
+    +chat(request: ChatRequest): ChatResult {async}
+    +health(model_key: str): ProviderHealth {async}
+    +embed(texts: list[str], model_key: str): EmbeddingResult {async}
+  }
+}
+
+package "app.tasks" {
+  class "react_loop.py" as loop <<module>> {
+    +run_react_loop(...): ReactLoopResult {async}
+  }
+  class ReactPolicy <<frozen dataclass>> {
+    +name: str
+    +version: str
+    +allowed_actions: frozenset[str]
+    +max_iterations: int
+    +max_model_calls: int
+    +max_tool_calls: int
+    +max_invalid_corrections: int
+    +max_identical_action_observations: int
+    +max_observation_chars: int
+    +max_total_tokens: int
+  }
+  class ActionEnvelope <<Pydantic>> {
+    +action: str
+    +arguments: dict[str, Any]
+    +reason_summary: str
+    +expected_evidence: str
+    +confidence: float
+    +signature(): str
+  }
+  class Observation <<frozen dataclass>> {
+    +tool: str
+    +status: str
+    +summary: str
+    +facts: dict[str, Any]
+    +evidence_refs: list[str]
+    +truncated: bool
+    +duration_ms: int
+    +action_id: str
+    +signature(): str
+  }
+  class ReactLoopResult <<dataclass>> {
+    +terminal_reason: str
+    +iterations: int
+    +model_calls: int
+    +tool_calls: int
+    +total_tokens: int
+    +observations: list[Observation]
+    +chats: list[ChatResult]
+  }
+}
+
+class "app.services.sandbox_client.SandboxClient" as sandbox {
+  +run(repository_root: Path, command: str): SandboxResult {async}
+}
+
+ToolRegistry "1" *-- "1..*" AgentTool : tools
+RunPythonTestsTool ..|> AgentTool : structural conformance
+ToolRegistry ..> ToolContext : receives
+ToolRegistry ..> ToolResult : returns
+AgentTool ..> ToolContext
+AgentTool ..> ToolResult
+ToolContext --> OllamaModelProvider : provider
+ToolContext --> "0..1" sandbox : sandbox_client
+RunPythonTestsTool ..> sandbox : via context
+OllamaModelProvider ..|> ModelProvider : structural conformance
+loop ..> OllamaModelProvider : concrete type in code
+loop ..> ReactPolicy : limits / allowed actions
+loop ..> ActionEnvelope : parse_action()
+loop ..> Observation : handler output
+loop ..> ReactLoopResult : returns
+ReactLoopResult "1" --> "0..*" Observation : observations
+
+note bottom of ToolRegistry
+  authorize -> validate arguments -> bounded execution
+  Other concrete tools: ReadFileTool, SearchKnowledgeTool,
+  ReadRepositoryTool, ListRepositoryTool,
+  ReadRepositoryFileTool, SearchFilesTool, ApplyPatchTool.
+end note
+legend bottom
+  Selected implemented contracts; not an exhaustive class inventory.
+  Protocol realization means Python structural typing, not explicit inheritance.
+  Dotted arrows are dependencies; solid arrows are held references.
+  react_loop.py is a function module, not an instantiated class.
+endlegend
+@enduml

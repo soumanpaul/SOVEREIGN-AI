@@ -1,0 +1,82 @@
+@startuml backend-use-cases
+!pragma layout smetana
+title Backend UML — implemented use cases
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 14
+skinparam ArrowColor #526580
+skinparam usecaseBackgroundColor #EEF4FF
+skinparam usecaseBorderColor #365880
+skinparam packageStyle rectangle
+skinparam nodesep 30
+skinparam ranksep 65
+
+actor Visitor
+actor "Authenticated user" as User
+actor "Organization owner" as Owner
+actor "Local model service\n(Ollama)" as Ollama
+actor "Isolated sandbox\nrunner" as Runner
+Owner --|> User
+
+rectangle "SovereignForge backend · /api/v1" {
+  usecase "Sign up / sign in" as Login
+  usecase "Manage own profile\nand sessions / sign out" as Account
+  usecase "Create / list workspaces\nand upload / list / remove files" as Files
+  usecase "Create / list knowledge bases\nand ingest documents" as Ingest
+  usecase "Search knowledge" as Search
+  usecase "Chat with a local model" as Chat
+  usecase "Submit an AI task" as Submit
+  usecase "Analyze documents /\nanswer grounded questions" as Analyze
+  usecase "Repair and verify code" as Code
+  usecase "Compare procurement quotations\nand generate recommendations" as Procurement
+  usecase "Run code verification" as Verify
+  usecase "Inspect task status / steps;\ncancel or retry a task" as Track
+  usecase "Preview / download artifacts\nand inspect audit events" as Results
+  usecase "List models / check health" as Models
+  usecase "Register / enable /\ndisable models" as ManageModels
+  usecase "Inspect sovereignty status\nand run egress test" as Security
+}
+
+Visitor -- Login
+User -- Account
+User -- Files
+User -- Ingest
+User -- Search
+User -- Chat
+User -- Submit
+User -- Track
+User -- Results
+User -- Models
+User -- Security
+Owner -- ManageModels
+
+Analyze -|> Submit
+Code -|> Submit
+Procurement -|> Submit
+Code ..> Verify : <<include>>
+Chat -- Ollama
+Ingest -- Ollama
+Search -- Ollama
+Analyze -- Ollama
+Code -- Ollama
+Procurement -- Ollama
+Verify -- Runner
+
+note bottom of Submit
+  Specialized workflows use the same POST /tasks endpoint.
+  Dispatch depends on task mode, goal and supplied inputs.
+  Authenticated use cases require a valid session.
+end note
+note bottom of ManageModels
+  Owner role is checked for model registration
+  and enable/disable operations.
+end note
+legend bottom
+  Solid line = actor participation. Hollow triangle = specialization.
+  <<include>> = required behavior for a successful coding workflow.
+  No human-review/resume use case is claimed: it is not an exposed route.
+  Infrastructure storage and public health probes are omitted for readability.
+endlegend
+@enduml
