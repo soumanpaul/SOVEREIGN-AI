@@ -15,7 +15,7 @@ from docker.errors import DockerException
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-app = FastAPI(title="SOVEREIGN AI Sandbox Controller", docs_url=None, redoc_url=None)
+app = FastAPI(title="SovereignForgeAI Sandbox Controller", docs_url=None, redoc_url=None)
 TOKEN = os.environ.get("SANDBOX_RUNNER_TOKEN", "sandbox-dev-token")
 IMAGE = os.environ.get("SANDBOX_IMAGE", "sovereignforge-sandbox-python:day4")
 MAX_FILES = 200

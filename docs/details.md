@@ -4,7 +4,7 @@ The key is to treat this as a **product build with a frozen scope**, not as an o
 
 For PS-26117, I would build one focused product:
 
-# SovereignForge
+# SovereignForgeAI
 
 ### On-Premise Agentic AI Workbench for Confidential Industrial Work
 
@@ -237,7 +237,7 @@ Build an **AI operations/workbench interface**.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ SovereignForge                                      ● SOVEREIGN MODE       │
+│ SovereignForgeAI                                      ● SOVEREIGN MODE       │
 │ On-Prem Agentic AI Workbench                                             │
 ├─────────────────┬──────────────────────────────────┬───────────────────────┤
 │ WORKSPACE       │ TASK                             │ EXECUTION             │

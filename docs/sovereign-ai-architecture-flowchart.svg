@@ -19,7 +19,7 @@
   </defs>
 
   <rect width="1800" height="1560" fill="#f4f6f8"/>
-  <text x="900" y="52" text-anchor="middle" class="title">Sovereign AI — Local Agentic Architecture</text>
+  <text x="900" y="52" text-anchor="middle" class="title">SovereignForgeAI — Local Agentic Architecture</text>
   <text x="900" y="82" text-anchor="middle" class="subtitle">UML component and deployment flow · all inference, data, and artifacts remain local</text>
 
   <!-- Browser device -->

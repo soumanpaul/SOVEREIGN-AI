@@ -65,7 +65,7 @@ def _brand_sheet(sheet: Worksheet, title: str, brand: str) -> None:
     sheet["A1"] = title
     sheet["A1"].font = Font(size=18, bold=True, color="FFFFFF")
     sheet["A1"].fill = PatternFill("solid", fgColor="235D46")
-    sheet["A2"] = safe_spreadsheet_text(f"{brand} · Generated locally by SOVEREIGN AI")
+    sheet["A2"] = safe_spreadsheet_text(f"{brand} · Generated locally by SovereignForgeAI")
     sheet["A2"].font = Font(italic=True, color="647069")
 
 
@@ -207,7 +207,7 @@ def create_procurement_xlsx(
         )
         _style_table(policy, 4, 2)
 
-        workbook.properties.title = "SOVEREIGN AI Procurement Comparison"
+        workbook.properties.title = "SovereignForgeAI Procurement Comparison"
         workbook.properties.creator = brand
         workbook.save(temporary)
         verified = load_workbook(temporary, data_only=False, read_only=True)
@@ -248,7 +248,7 @@ def create_procurement_docx(
     brand = f"{organization_name.strip() or 'Organization'}™"
     try:
         document = DocxDocument()
-        document.core_properties.title = "SOVEREIGN AI Procurement Recommendation"
+        document.core_properties.title = "SovereignForgeAI Procurement Recommendation"
         document.core_properties.author = brand
         styles = document.styles
         styles["Normal"].font.name = "Aptos"
@@ -322,7 +322,7 @@ def create_procurement_docx(
         for control in controls:
             document.add_paragraph(control, style="List Bullet")
         footer = section.footer.paragraphs[0]
-        footer.text = f"Confidential · {brand} · Generated locally by SOVEREIGN AI"
+        footer.text = f"Confidential · {brand} · Generated locally by SovereignForgeAI"
         footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
         document.save(str(temporary))
         verified = DocxDocument(str(temporary))

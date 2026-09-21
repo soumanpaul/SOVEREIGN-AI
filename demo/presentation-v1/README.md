@@ -2,7 +2,7 @@
 
 Version: `presentation-v1.0.0`
 
-This directory contains a synthetic, distributable, deterministic demonstration corpus for the three SovereignForge workflows. No file contains real personal, commercial, or operational data.
+This directory contains a synthetic, distributable, deterministic demonstration corpus for the three SovereignForgeAI workflows. No file contains real personal, commercial, or operational data.
 
 ## Demo order
 

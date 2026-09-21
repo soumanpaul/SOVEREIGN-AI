@@ -34,7 +34,7 @@ RESPONSE_HEADERS = {
 }
 
 app = FastAPI(
-    title="SOVEREIGN AI Local API Ingress",
+    title="SovereignForgeAI Local API Ingress",
     docs_url=None,
     redoc_url=None,
     openapi_url=None,

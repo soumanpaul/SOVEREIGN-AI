@@ -20,7 +20,7 @@ actor "Local model service\n(Ollama)" as Ollama
 actor "Isolated sandbox\nrunner" as Runner
 Owner --|> User
 
-rectangle "SovereignForge backend · /api/v1" {
+rectangle "SovereignForgeAI backend · /api/v1" {
   usecase "Sign up / sign in" as Login
   usecase "Manage own profile\nand sessions / sign out" as Account
   usecase "Create / list workspaces\nand upload / list / remove files" as Files

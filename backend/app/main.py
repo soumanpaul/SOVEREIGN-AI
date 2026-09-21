@@ -27,7 +27,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="Local-first SOVEREIGN AI application API",
+    description="Local-first SovereignForgeAI application API",
     lifespan=lifespan,
 )
 app.add_middleware(

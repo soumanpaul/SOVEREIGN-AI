@@ -1,10 +1,10 @@
-# SovereignForge Engineering Plan
+# SovereignForgeAI Engineering Plan
 
 Status: Day 5 prototype complete
 Target: seven-day prototype  
 Source brief: [`../details.md`](../details.md)
 
-This folder is the implementation source of truth for **SovereignForge**, an on-premise agentic AI workbench for confidential industrial work. The plan intentionally optimizes for a reliable competition prototype, not a production-scale platform.
+This folder is the implementation source of truth for **SovereignForgeAI**, an on-premise agentic AI workbench for confidential industrial work. The plan intentionally optimizes for a reliable competition prototype, not a production-scale platform.
 
 ## Document map
 

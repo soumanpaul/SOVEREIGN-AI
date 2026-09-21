@@ -1,8 +1,8 @@
 # Architecture Flowchart Guide
 
-This guide explains the [Sovereign AI architecture flowchart](sovereign-ai-architecture-flowchart.png). The editable source is [sovereign-ai-architecture-flowchart.svg](sovereign-ai-architecture-flowchart.svg).
+This guide explains the [SovereignForgeAI architecture flowchart](sovereign-ai-architecture-flowchart.png). The editable source is [sovereign-ai-architecture-flowchart.svg](sovereign-ai-architecture-flowchart.svg).
 
-![Sovereign AI local agentic architecture](sovereign-ai-architecture-flowchart.png)
+![SovereignForgeAI local agentic architecture](sovereign-ai-architecture-flowchart.png)
 
 ## Notation
 

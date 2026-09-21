@@ -1,6 +1,6 @@
 # Setup and Run Guide
 
-This is the operator runbook for starting SovereignForge on the current Mac and after moving the repository to another machine.
+This is the operator runbook for starting SovereignForgeAI on the current Mac and after moving the repository to another machine.
 
 ## Quick command map
 
@@ -111,7 +111,7 @@ This installs:
 
 Model downloads are not repeated during normal application startup.
 
-### 6. Build and start SovereignForge
+### 6. Build and start SovereignForgeAI
 
 Still in terminal 2:
 
@@ -274,7 +274,7 @@ Use `Control-C` to stop following logs. The most common causes are unavailable p
 
 ### What this repository contains
 
-This repository is the complete SovereignForge prototype source of truth. It contains the web interface, API, database migrations, local-AI integration, document-processing pipeline, container definitions, automated tests, deterministic demo data, and engineering documentation. Generated dependencies and runtime data are deliberately excluded from Git so each machine can build a clean, reproducible environment.
+This repository is the complete SovereignForgeAI prototype source of truth. It contains the web interface, API, database migrations, local-AI integration, document-processing pipeline, container definitions, automated tests, deterministic demo data, and engineering documentation. Generated dependencies and runtime data are deliberately excluded from Git so each machine can build a clean, reproducible environment.
 
 ```text
 ai-agentic-flow/
@@ -327,7 +327,7 @@ flowchart TD
     F --> G[FastAPI starts on port 8000]
     G --> H[Next.js starts on port 3000]
     I[Native Ollama on port 11434] --> G
-    H --> J[Browser opens SovereignForge]
+    H --> J[Browser opens SovereignForgeAI]
 ```
 
 `make up` is the top-level entry point, but it does not start Ollama or the macOS container engine. Those are host-level services and must already be running. Compose waits for PostgreSQL and Qdrant health checks before starting the API. The API applies pending migrations before accepting requests, and the frontend starts after the API container is launched.

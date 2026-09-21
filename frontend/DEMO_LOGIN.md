@@ -1,8 +1,8 @@
-# SOVEREIGN AI development login
+# SovereignForgeAI development login
 
 Use this account only with the local development environment.
 
-- Organization: `SOVEREIGN AI Demo`
+- Organization: `SOVEREIGN AI Demo` (existing local account)
 - Name: `Demo Administrator`
 - Email: `demo@sovereignforge.local`
 - Password: `SovereignForgeDemo!2026`

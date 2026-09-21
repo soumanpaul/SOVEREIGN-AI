@@ -1,8 +1,8 @@
 # Workbench UML Flowchart Guide
 
-This document explains every stage in the [Sovereign AI Workbench UML activity flowchart](sovereign-ai-workbench-flow.png). Read it from top to bottom alongside the diagram.
+This document explains every stage in the [SovereignForgeAI Workbench UML activity flowchart](sovereign-ai-workbench-flow.png). Read it from top to bottom alongside the diagram.
 
-![Sovereign AI Workbench UML activity flow](sovereign-ai-workbench-flow.png)
+![SovereignForgeAI Workbench UML activity flow](sovereign-ai-workbench-flow.png)
 
 ## 1. How to read the diagram
 

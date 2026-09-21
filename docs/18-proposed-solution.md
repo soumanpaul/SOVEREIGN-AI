@@ -15,13 +15,13 @@ Secure On-Premise Agentic AI for Confidential Industrial Work
 
 **Problem Statement:** Sovereign On-Premise Agentic AI Workbench using Open-Weight Multimodal LLMs for Confidential Industrial Work  
 **Problem Statement ID:** SHI26117  
-**Solution Name:** SovereignForge
+**Solution Name:** SovereignForgeAI
 
 ## 1. Detailed explanation of the proposed solution
 
-SovereignForge is a sovereign, on-premise agentic AI workbench designed for industrial organizations that need the benefits of generative AI without sending confidential information to cloud AI services. It enables engineers and analysts to process internal documents, scanned reports, equipment images, source code, tabular data, maintenance procedures and procurement records entirely within an organization-controlled computing environment. Local open-weight models perform generation, reasoning, vision analysis and embedding; local services store files, metadata and vectors; and controlled tools convert AI decisions into verified actions and usable business deliverables.
+SovereignForgeAI is a sovereign, on-premise agentic AI workbench designed for industrial organizations that need the benefits of generative AI without sending confidential information to cloud AI services. It enables engineers and analysts to process internal documents, scanned reports, equipment images, source code, tabular data, maintenance procedures and procurement records entirely within an organization-controlled computing environment. Local open-weight models perform generation, reasoning, vision analysis and embedding; local services store files, metadata and vectors; and controlled tools convert AI decisions into verified actions and usable business deliverables.
 
-Unlike a conventional chatbot, SovereignForge operates as an AI workbench. A user selects files and internal knowledge sources, describes the required outcome, and receives a live, auditable execution showing how the task was classified, which model was selected, which approved tools were used, what evidence supported the result and which artifacts were produced. The system is designed around seven integrated capabilities:
+Unlike a conventional chatbot, SovereignForgeAI operates as an AI workbench. A user selects files and internal knowledge sources, describes the required outcome, and receives a live, auditable execution showing how the task was classified, which model was selected, which approved tools were used, what evidence supported the result and which artifacts were produced. The system is designed around seven integrated capabilities:
 
 1. **Local open-weight model serving:** Ollama provides the initial on-premise inference layer, with cloud functionality disabled. A provider-neutral `ModelProvider` interface allows the same application to support vLLM, TGI or llama.cpp in future deployments without rewriting business workflows.
 2. **Multi-model registry and intelligent routing:** The registry records each local model's capabilities, health, context window, quantization, priority and resource needs. A deterministic capability router classifies a task and selects a healthy model that satisfies all mandatory capabilities. General reasoning, coding and embedding workloads can therefore use models suited to their purpose instead of forcing every task through one large model.
@@ -35,17 +35,17 @@ The prototype uses a modular-monolith architecture to remain reliable and delive
 
 ### Representative end-to-end workflows
 
-**Industrial inspection review:** A maintenance engineer uploads an inspection report, an equipment image and the approved maintenance SOP. SovereignForge extracts or OCRs the report, analyzes the image locally, identifies the equipment and observed defect, retrieves the applicable SOP clauses, assesses severity and prepares a cited corrective-maintenance approval note in DOCX format. Low-confidence identity, unreadable pages or insufficient policy evidence cause an explicit `needs_review` outcome instead of an invented conclusion.
+**Industrial inspection review:** A maintenance engineer uploads an inspection report, an equipment image and the approved maintenance SOP. SovereignForgeAI extracts or OCRs the report, analyzes the image locally, identifies the equipment and observed defect, retrieves the applicable SOP clauses, assesses severity and prepares a cited corrective-maintenance approval note in DOCX format. Low-confidence identity, unreadable pages or insufficient policy evidence cause an explicit `needs_review` outcome instead of an invented conclusion.
 
 **Safe coding agent:** An automation engineer supplies Python source, tests and a CSV fixture. The router selects the coding model; the agent reads only the provided workspace, diagnoses the defect, proposes a patch and executes tests inside the network-disabled sandbox. It returns the patch, modified file and test evidence only after validation. Timeouts, resource violations and unsafe network or path requests are terminated and recorded.
 
 **Procurement decision support:** A procurement analyst uploads vendor quotations and the organization's procurement policy. The workbench extracts price, warranty, delivery and compliance data while retaining original source references, applies explicit comparison criteria, retrieves relevant policy requirements and produces a validated XLSX comparison plus a cited DOCX recommendation. Missing values remain “Not provided,” conflicts remain visible and tied recommendations are not broken arbitrarily.
 
-Together, these workflows demonstrate that SovereignForge is not limited to answering questions: it can perceive multimodal inputs, retrieve institutional knowledge, reason under policy, invoke controlled tools, verify outcomes and deliver files that fit real industrial work.
+Together, these workflows demonstrate that SovereignForgeAI is not limited to answering questions: it can perceive multimodal inputs, retrieve institutional knowledge, reason under policy, invoke controlled tools, verify outcomes and deliver files that fit real industrial work.
 
 ## 2. How the solution addresses the problem
 
-| Problem faced by industrial organizations | SovereignForge response | Verifiable outcome |
+| Problem faced by industrial organizations | SovereignForgeAI response | Verifiable outcome |
 |---|---|---|
 | Sensitive reports, designs, code and commercial bids cannot be shared with public AI services | All generation, vision, OCR, embeddings, retrieval and file processing run on organization-controlled infrastructure using open-weight models | No cloud AI dependency during execution; controlled runtime-egress checks and local-request evidence are displayed |
 | A single general-purpose model is inefficient and unreliable across diverse industrial tasks | Capability-based routing selects a healthy general, vision or coding model based on explicit task requirements | The selected model, excluded candidates and routing reasons are persisted and visible |
@@ -63,7 +63,7 @@ The project plan also turns these capabilities into measurable acceptance criter
 
 ### A. Sovereignty is a measurable product capability
 
-Most local-AI demonstrations equate “the model is running on my laptop” with security. SovereignForge makes a narrower and more defensible claim. It combines local open-weight inference with private service networks, network-disabled sandboxes, the absence of cloud AI adapters, controlled egress probes, local-model request counters and auditable security events. The interface clearly separates what is enforced, what has been observed and what is not measurable. This makes sovereignty visible and testable rather than a deployment assumption.
+Most local-AI demonstrations equate “the model is running on my laptop” with security. SovereignForgeAI makes a narrower and more defensible claim. It combines local open-weight inference with private service networks, network-disabled sandboxes, the absence of cloud AI adapters, controlled egress probes, local-model request counters and auditable security events. The interface clearly separates what is enforced, what has been observed and what is not measurable. This makes sovereignty visible and testable rather than a deployment assumption.
 
 ### B. Deterministic governance around probabilistic models
 
@@ -71,11 +71,11 @@ The platform uses AI where interpretation and generation add value, but keeps au
 
 ### C. One sovereign control plane for heterogeneous models and work
 
-SovereignForge unifies general reasoning, multimodal understanding, coding and embeddings behind a capability-aware registry. A lightweight specialist model can be selected for each workload based on capability and health, which is especially valuable on constrained on-premise hardware. The provider abstraction also avoids locking the organization to a single serving engine or model family.
+SovereignForgeAI unifies general reasoning, multimodal understanding, coding and embeddings behind a capability-aware registry. A lightweight specialist model can be selected for each workload based on capability and health, which is especially valuable on constrained on-premise hardware. The provider abstraction also avoids locking the organization to a single serving engine or model family.
 
 ### D. Evidence-linked actions, not only evidence-linked answers
 
-Traditional RAG products usually end with a cited paragraph. SovereignForge carries evidence through the entire operational chain: source page to retrieved chunk, retrieved chunk to recommendation, recommendation to tool action, and tool action to validated artifact. A maintenance approval note or procurement workbook therefore retains both knowledge provenance and execution provenance.
+Traditional RAG products usually end with a cited paragraph. SovereignForgeAI carries evidence through the entire operational chain: source page to retrieved chunk, retrieved chunk to recommendation, recommendation to tool action, and tool action to validated artifact. A maintenance approval note or procurement workbook therefore retains both knowledge provenance and execution provenance.
 
 ### E. Workflow-specific proof of completion
 

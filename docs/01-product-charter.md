@@ -1,7 +1,7 @@
 # Product Charter
 
 ## Product statement
-- SovereignForge is a local-first agentic AI workbench that lets industrial teams   `analyze confidential documents` and `images`, `use internal knowledge`, `execute controlled tools`, and c`reate business artifacts` without sending data to external AI services.
+- SovereignForgeAI is a local-first agentic AI workbench that lets industrial teams   `analyze confidential documents` and `images`, `use internal knowledge`, `execute controlled tools`, and c`reate business artifacts` without sending data to external AI services.
 
 ## Problem
 - Industrial inspection reports, 

@@ -210,7 +210,7 @@ def create_approval_docx(
     brand = f"{organization_name.strip() or 'Organization'}™"
     try:
         document = DocxDocument()
-        document.core_properties.title = "SOVEREIGN AI Approval Recommendation"
+        document.core_properties.title = "SovereignForgeAI Approval Recommendation"
         document.core_properties.subject = f"AI-assisted recommendation for {brand}"
         document.core_properties.author = brand
         styles = document.styles
@@ -234,7 +234,7 @@ def create_approval_docx(
         brand_run.bold = True
         brand_run.font.size = Pt(11)
         brand_run.font.color.rgb = RGBColor(196, 122, 28)
-        title = document.add_heading("SOVEREIGN AI Approval Recommendation", level=0)
+        title = document.add_heading("SovereignForgeAI Approval Recommendation", level=0)
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
         subtitle = document.add_paragraph(f"Run {run_id} · locally generated")
         subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -263,7 +263,7 @@ def create_approval_docx(
             "recommendation and does not replace the responsible approver."
         )
         footer = section.footer.paragraphs[0]
-        footer.text = f"Confidential · {brand} · Generated locally by SOVEREIGN AI"
+        footer.text = f"Confidential · {brand} · Generated locally by SovereignForgeAI"
         footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
         for run in footer.runs:
             run.font.size = Pt(8)

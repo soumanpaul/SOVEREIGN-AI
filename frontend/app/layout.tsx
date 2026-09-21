@@ -6,7 +6,7 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SOVEREIGN AI · Local AI Control Plane",
+  title: "SovereignForgeAI · Local AI Control Plane",
   description: "Sovereign on-premise agentic AI workbench for confidential industrial work.",
   icons: { icon: "/icon.svg", shortcut: "/icon.svg" },
 };

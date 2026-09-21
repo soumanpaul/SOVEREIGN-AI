@@ -37,14 +37,14 @@ async def test_local_signup_session_signin_and_signout() -> None:
             signup = await client.post(
                 "/api/v1/auth/signup",
                 json={
-                    "organization_name": "SOVEREIGN AI Demo",
+                    "organization_name": "SovereignForgeAI Demo",
                     "full_name": "Demo Administrator",
                     "email": DEMO_EMAIL,
                     "password": DEMO_PASSWORD,
                 },
             )
             assert signup.status_code == 201
-            assert signup.json()["organization"]["name"] == "SOVEREIGN AI Demo"
+            assert signup.json()["organization"]["name"] == "SovereignForgeAI Demo"
             assert "HttpOnly" in signup.headers["set-cookie"]
 
             current = await client.get("/api/v1/auth/me")
@@ -70,7 +70,7 @@ async def test_local_signup_session_signin_and_signout() -> None:
                     select(Workspace).where(Workspace.organization_id == user.organization_id)
                 )
                 assert workspace is not None
-                assert workspace.name == "SOVEREIGN AI Demo Workspace"
+                assert workspace.name == "SovereignForgeAI Demo Workspace"
                 stored = StoredFile(
                     workspace_id=workspace.id,
                     display_name="temporary.txt",

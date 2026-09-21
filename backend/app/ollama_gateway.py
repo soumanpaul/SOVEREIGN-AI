@@ -20,7 +20,7 @@ ALLOWED: dict[tuple[str, str], Literal["GET", "POST"]] = {
 MAX_REQUEST_BYTES = 32 * 1024 * 1024
 
 app = FastAPI(
-    title="SOVEREIGN AI Local Ollama Gateway",
+    title="SovereignForgeAI Local Ollama Gateway",
     docs_url=None,
     redoc_url=None,
     openapi_url=None,

@@ -90,7 +90,7 @@ Frontend UI & Dashboard Binding
 Build the impressive UI now.
 Main screen:
 ┌─────────────────────────────────────────────────────┐
-│ SOVEREIGN AI                    OFFLINE ●            │
+│ SovereignForgeAI                    OFFLINE ●            │
 ├────────────┬─────────────────────────┬───────────────┤
 │ FILES      │ TASK                    │ AGENT TRACE   │
 │            │                         │               │

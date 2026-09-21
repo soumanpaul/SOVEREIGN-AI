@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_env: str = "development"
-    app_name: str = "SOVEREIGN AI"
+    app_name: str = "SovereignForgeAI"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     frontend_origin: str = "http://localhost:3000"

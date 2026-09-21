@@ -1,4 +1,4 @@
-"""Run presentation-v1.0.0 through the live SovereignForge HTTP API."""
+"""Run presentation-v1.0.0 through the live SovereignForgeAI HTTP API."""
 
 from __future__ import annotations
 

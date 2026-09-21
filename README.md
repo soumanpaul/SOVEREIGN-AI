@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/sovereign-ai-logo.png" alt="SOVEREIGN-AI" width="820" />
+  <img src="docs/assets/sovereign-ai-logo.png" alt="SovereignForgeAI" width="820" />
 </p>
 
 <p align="center">
@@ -20,11 +20,11 @@
 </p>
 
 > [!IMPORTANT]
-> SOVEREIGN-AI is an actively developed competition prototype, not a production-certified platform. The current repository proves local knowledge, governed document agents, and a network-disabled coding-agent vertical slice. Human review is still required before using generated artifacts or patches in production.
+> SovereignForgeAI is an actively developed competition prototype, not a production-certified platform. The current repository proves local knowledge, governed document agents, and a network-disabled coding-agent vertical slice. Human review is still required before using generated artifacts or patches in production.
 
-## What is SOVEREIGN-AI?
+## What is SovereignForgeAI?
 
-SOVEREIGN-AI is an on-premise AI workbench for teams that cannot send inspection reports, maintenance procedures, source code, procurement records, or other confidential material to public AI services.
+SovereignForgeAI is an on-premise AI workbench for teams that cannot send inspection reports, maintenance procedures, source code, procurement records, or other confidential material to public AI services.
 
 The platform combines local open-weight models with secure file handling, offline document extraction, versioned vector search, and evidence-linked results. Its target design adds deterministic model routing, bounded agent loops, allowlisted tools, isolated code execution, validated office artifacts, and inspectable sovereignty evidence.
 
@@ -39,7 +39,7 @@ Industrial AI adoption is often blocked by four practical concerns:
 - model-selected actions need strict tool, path, time, and network boundaries;
 - outputs need evidence, provenance, and objective completion checks.
 
-SOVEREIGN-AI treats those concerns as product capabilities rather than deployment assumptions.
+SovereignForgeAI treats those concerns as product capabilities rather than deployment assumptions.
 
 ## Current capabilities
 
@@ -70,10 +70,10 @@ The inspection, safe-coding, and procurement paths are implemented through Day 5
 
 ## Architecture
 
-SOVEREIGN-AI uses a modular-monolith application with replaceable local infrastructure adapters. PostgreSQL is authoritative for metadata, Qdrant stores document vectors, the local filesystem stores uploaded content, and native Ollama serves open-weight models. Docker keeps PostgreSQL and Qdrant on a private internal network.
+SovereignForgeAI uses a modular-monolith application with replaceable local infrastructure adapters. PostgreSQL is authoritative for metadata, Qdrant stores document vectors, the local filesystem stores uploaded content, and native Ollama serves open-weight models. Docker keeps PostgreSQL and Qdrant on a private internal network.
 
 <p align="center">
-  <img src="docs/imgs/architecture.png" alt="SOVEREIGN-AI target system architecture" width="960" />
+  <img src="docs/sovereign-ai-architecture-flowchart.svg" alt="SovereignForgeAI target system architecture" width="960" />
 </p>
 
 <p align="center"><sub>Target architecture. Components marked as planned in the capability table are not yet present in the Day 2 runtime.</sub></p>
