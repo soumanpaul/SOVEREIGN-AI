@@ -30,8 +30,8 @@ up:
 # Next.js; run `make down` when the supporting containers are no longer needed.
 dev:
 	$(DOCKER_ENV) $(COMPOSE) stop frontend
-	$(DOCKER_ENV) $(COMPOSE) up --build -d postgres qdrant api-worker
-	NEXT_PUBLIC_API_URL=$${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1} npm run dev --workspace=@sovereignforge/frontend
+	$(DOCKER_ENV) $(COMPOSE) up --build -d postgres qdrant api-worker api-ingress
+	NEXT_PUBLIC_API_URL=$${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1} npm run dev --workspace=@sovereignforge/frontend -- --hostname 127.0.0.1 --port 3000
 
 down:
 	$(DOCKER_ENV) $(COMPOSE) down
