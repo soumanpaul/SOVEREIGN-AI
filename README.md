@@ -18,7 +18,7 @@
 <p align="center">
   <a href="#recorded-demo-results">Demo evidence</a> ·
   <a href="#three-industrial-workflows">Workflows</a> ·
-  <a href="#how-it-works">Architecture</a> ·
+  <a href="#design-and-architecture">Design & architecture</a> ·
   <a href="#run-locally">Run locally</a> ·
   <a href="#security-and-sovereignty">Security boundaries</a>
 </p>
@@ -72,6 +72,24 @@ For example, the procurement fixture includes a cheaper bid that fails lead-time
 - **Keep evidence attached to the work.** Retrieval preserves document/page provenance, while task records retain steps, validation results, and artifact metadata.
 - **Bound agent actions.** Tool profiles, fixed sandbox commands, resource limits, retries, and timeouts constrain execution.
 - **Expose sovereignty evidence.** The Security screen combines configured controls with an explicit outbound probe and audit events, with the scope described below.
+
+## Design and architecture
+
+![Architecture: AI agent routes to the model router before invoking the selected LLM](docs/assets/architecture-router-first.png)
+
+**Execution order: AI agent → model router → selected text, vision, or coding model.** Tools authorize and execute actions; the code model generates candidate changes and the sandbox runs them. The image is a conceptual view; the detailed design defines the actual service and trust boundaries.
+
+The [production design package](docs/design/README.md) maps the current prototype to a supervised industrial deployment. It includes an inventory of all 36 current API routes, proposed production contracts, database evolution, frontend review flows, and measurable delivery gates. **These are implementation plans, not claims that the prototype is already production-ready.**
+
+| Design area | What is specified |
+|---|---|
+| [System architecture](docs/design/architecture.md) | Component responsibilities, routing, independent workers, job recovery, deployment boundaries |
+| [Backend and APIs](docs/design/backend-api.md) | Existing routes, proposed v2 contracts, permissions, idempotency, events, review and cancellation semantics |
+| [Database and storage](docs/design/database.md) | Current schema, target ER model, tenant constraints, immutable revisions, migrations, retention and recovery |
+| [Frontend design](docs/design/frontend.md) | Screens, task and review journeys, evidence previews, error states, accessibility, API integration |
+| [Security design](docs/design/security.md) | Threat model, enterprise identity, sandbox isolation, network evidence, audit and secrets |
+| [Operations and evaluation](docs/design/operations.md) | Offline deployment, capacity, monitoring, backups, model evaluation, incident response and release |
+| [Production delivery plan](docs/design/delivery-plan.md) | Phased backlog, owner roles, dependencies, acceptance gates, risks and architecture decisions |
 
 ## How it works
 
@@ -212,6 +230,8 @@ npm run build
 These commands run the configured lint, type, test, and build checks. Live acceptance above additionally requires running services and downloaded models; unit tests alone do not establish real-model quality.
 
 ## Next milestones
+
+See the [phased production delivery plan](docs/design/delivery-plan.md) for work packages, dependencies, and release gates.
 
 - Publish repeatable latency, peak-memory, and task-success measurements across a larger corpus.
 - Expand evaluation for poor scans, conflicting sources, prompt injection, and unsupported requests.
