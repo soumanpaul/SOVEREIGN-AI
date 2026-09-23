@@ -1,124 +1,162 @@
 <p align="center">
-  <img src="docs/assets/sovereign-ai-logo.png" alt="SovereignForgeAI" width="820" />
+  <img src="docs/assets/sovereign-ai-logo.png" alt="SovereignForgeAI" width="720" />
 </p>
 
 <p align="center">
-  <strong>Secure, local-first agentic AI for confidential industrial work.</strong>
+  <strong>Confidential industrial inputs. Local AI execution. Reviewable business outputs.</strong>
 </p>
 
 <p align="center">
-  Process sensitive documents, search internal knowledge, route work across local models,
-  and evolve toward governed tool execution—without making a cloud AI service part of the runtime.
+  An on-premise agentic workbench that turns inspection reports, source code, and vendor quotations<br />
+  into cited documents, test-checked patches, and formula-backed spreadsheets using local open-weight models.
 </p>
 
 <p align="center">
-  <img alt="Prototype status" src="https://img.shields.io/badge/status-Day%205%20prototype-16a34a" />
-  <img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
-  <img alt="Node.js 22+" src="https://img.shields.io/badge/Node.js-22%2B-339933?logo=nodedotjs&logoColor=white" />
-  <img alt="Local AI with Ollama" src="https://img.shields.io/badge/AI-local%20via%20Ollama-111827" />
-  <img alt="Docker Compose" src="https://img.shields.io/badge/runtime-Docker%20Compose-2496ED?logo=docker&logoColor=white" />
+  <strong>Smart India Hackathon 2026 · SIH26117 · Team BOMBE · Team ID 144010</strong>
 </p>
 
-> [!IMPORTANT]
-> SovereignForgeAI is an actively developed competition prototype, not a production-certified platform. The current repository proves local knowledge, governed document agents, and a network-disabled coding-agent vertical slice. Human review is still required before using generated artifacts or patches in production.
+<p align="center">
+  <a href="#recorded-demo-results">Demo evidence</a> ·
+  <a href="#three-industrial-workflows">Workflows</a> ·
+  <a href="#how-it-works">Architecture</a> ·
+  <a href="#run-locally">Run locally</a> ·
+  <a href="#security-and-sovereignty">Security boundaries</a>
+</p>
 
-## What is SovereignForgeAI?
+**Start here:** inspect the [recorded acceptance results](demo/presentation-v1/output/acceptance-results.json), download the [generated inspection report](demo/presentation-v1/output/inspection-approval-recommendation-5411471a.docx), or open the [procurement workbook](demo/presentation-v1/output/procurement-procurement-comparison-7f567ba1.xlsx). These are committed application outputs from the synthetic demonstration dataset.
 
-SovereignForgeAI is an on-premise AI workbench for teams that cannot send inspection reports, maintenance procedures, source code, procurement records, or other confidential material to public AI services.
+The prototype combines local inference with document retrieval, controlled tools, artifact validation, and an execution trace. Its central design rule: **models propose; software constrains execution and checks outputs; people approve consequential decisions.**
 
-The platform combines local open-weight models with secure file handling, offline document extraction, versioned vector search, and evidence-linked results. Its target design adds deterministic model routing, bounded agent loops, allowlisted tools, isolated code execution, validated office artifacts, and inspectable sovereignty evidence.
+## Recorded demo results
 
-The guiding rule is simple: **probabilistic models may propose; deterministic software must authorize, constrain, and verify.**
+The repository includes a recorded acceptance run for `presentation-v1.0.0`, with an outbound probe timestamp of **13 September 2026 (UTC)**. The record reports all three workflow runs and an overall `passed` status.
 
-## Why it exists
-
-Industrial AI adoption is often blocked by four practical concerns:
-
-- sensitive data must remain under organizational control;
-- answers must be grounded in approved internal material;
-- model-selected actions need strict tool, path, time, and network boundaries;
-- outputs need evidence, provenance, and objective completion checks.
-
-SovereignForgeAI treats those concerns as product capabilities rather than deployment assumptions.
-
-## Current capabilities
-
-| Capability | Status | Evidence in this repository |
+| Workflow | Recorded execution | Inspect the evidence |
 |---|---|---|
-| Next.js workbench and FastAPI API | Available | Dashboard, Workbench, Models, and Knowledge screens |
-| Local Ollama integration | Available | Provider-neutral adapter, health checks, and local inference |
-| Secure local uploads | Available | Streamed size limits, generated storage keys, path containment, and type validation |
-| Document extraction | Available | PDF text extraction, page-level Tesseract OCR fallback, text/Markdown/CSV/image support |
-| Local knowledge indexing | Available | Deterministic chunks, local embeddings, Qdrant vectors, staged index activation |
-| Cited semantic retrieval | Available | Workspace- and version-scoped results with document and page provenance |
-| Durable task runtime and model router | Available | Persisted tasks/runs/steps, bounded retries, deterministic routing |
-| Tool policy gateway and audit trace | Available | Profile allowlists, default deny, task-aware Trace UI and audit JSON |
-| Network-disabled coding sandbox | Available | Ephemeral non-root containers, fixed commands, limits, active egress probe |
-| DOCX artifact pipeline | Available | Markdown-aware generated document, validation, checksum, and trademark footer |
-| Coding artifacts | Available | Verified patch, repository ZIP, and sandbox evidence JSON |
-| Multimodal evidence pipeline | Available | OCR plus local vision analysis, normalized page evidence, and explicit fallback trace |
-| XLSX artifact pipeline | Available | Formula-backed procurement workbook, structural validation, checksum, and trace |
-| Sovereignty Center and egress proof | Planned | Evidence model and negative security tests are specified |
+| Inspection review | Qwen3 1.7B · 8 steps · 1 artifact | [Generated DOCX](demo/presentation-v1/output/inspection-approval-recommendation-5411471a.docx) · [Input and expected facts](demo/presentation-v1/01-inspection/expected.json) |
+| Code repair | Qwen2.5-Coder 1.5B · 11 steps · 3 artifacts | [Run record](demo/presentation-v1/output/acceptance-results.json) · [Test fixture](demo/presentation-v1/02-coding/p101-temperature-monitor/test_monitor.py) · [Expected patch](demo/presentation-v1/02-coding/expected.patch) |
+| Procurement comparison | Qwen3 1.7B · 7 steps · 2 artifacts | [Generated XLSX](demo/presentation-v1/output/procurement-procurement-comparison-7f567ba1.xlsx) · [Recommendation DOCX](demo/presentation-v1/output/procurement-procurement-recommendation-7f567ba1.docx) |
+| API outbound probe | Connection to `https://example.com` recorded as `blocked` | [Probe result, target, and timestamp](demo/presentation-v1/output/acceptance-results.json) |
 
-## Target workflows
+The three committed office outputs have SHA-256 checksums and `valid` statuses in the record. The coding run records three artifacts; its generated downloads are not bundled here, so the linked expected patch is a test fixture, not a captured model output.
 
-1. **Industrial inspection review** — combine reports, equipment imagery, and approved SOPs to produce cited maintenance recommendations.
-2. **Safe coding agent** — diagnose supplied code, propose a patch, and verify it inside an ephemeral network-disabled sandbox.
-3. **Procurement decision support** — compare quotations against policy and produce traceable XLSX/DOCX decision artifacts.
+**Evidence scope:** this is a recorded demonstration on synthetic data, not a broad accuracy benchmark or an independent security audit. Artifact validation checks specific structural and workflow requirements; human review remains necessary. The outbound probe observes one API-runtime connection attempt, not every process on the host.
 
-The inspection, safe-coding, and procurement paths are implemented through Day 5.
-
-## Architecture
-
-SovereignForgeAI uses a modular-monolith application with replaceable local infrastructure adapters. PostgreSQL is authoritative for metadata, Qdrant stores document vectors, the local filesystem stores uploaded content, and native Ollama serves open-weight models. Docker keeps PostgreSQL and Qdrant on a private internal network.
+<details>
+<summary><strong>See an actual prototype execution trace</strong></summary>
 
 <p align="center">
-  <img src="docs/sovereign-ai-architecture-flowchart.svg" alt="SovereignForgeAI target system architecture" width="960" />
+  <img src="day3-trace.png" alt="Prototype execution trace showing task classification, local model routing, response generation, DOCX publication, and completion" width="1000" />
 </p>
 
-<p align="center"><sub>Target architecture. Components marked as planned in the capability table are not yet present in the Day 2 runtime.</sub></p>
+Historical prototype capture with earlier UI branding. This screenshot illustrates the persisted trace; its displayed timing is not a benchmark for the three workflows above.
 
-### Technology stack
+</details>
 
-| Layer | Technology |
+## Three industrial workflows
+
+The [demo pack](demo/presentation-v1/README.md) follows a fictional organization, **Aegis Process Systems**, through pump inspection, a monitoring-code repair, and replacement-part procurement. All inputs are synthetic and distributable.
+
+| User and task | Inputs | Workbench output |
+|---|---|---|
+| **Maintenance engineer:** review pump P-101 | Inspection PDF, seal-leak image, and maintenance SOP | Draft inspection/approval DOCX grounded in retrieved evidence, for engineer review |
+| **Software engineer:** fix the monitoring logic | Python repository ZIP with an intentional defect and tests | Candidate patch, repaired repository, and sandbox report, published after configured checks pass |
+| **Procurement reviewer:** compare replacement-part bids | Quotation CSV and procurement-policy PDF | Formula-backed comparison XLSX and recommendation DOCX with policy checks |
+
+For example, the procurement fixture includes a cheaper bid that fails lead-time and warranty requirements. Its expected recommendation is **Aravind Industrial**, demonstrating why policy compliance matters alongside price. Inspect the [ground truth](demo/presentation-v1/03-procurement/expected.json) and the generated workbook above.
+
+## What makes the approach useful
+
+- **Complete tasks through artifacts.** Workflows produce documents, spreadsheets, and code-repair deliverables that users can inspect and download.
+- **Make routing explainable.** Task classification, capability requirements, model health, and priority determine model selection; the decision is recorded.
+- **Keep evidence attached to the work.** Retrieval preserves document/page provenance, while task records retain steps, validation results, and artifact metadata.
+- **Bound agent actions.** Tool profiles, fixed sandbox commands, resource limits, retries, and timeouts constrain execution.
+- **Expose sovereignty evidence.** The Security screen combines configured controls with an explicit outbound probe and audit events, with the scope described below.
+
+## How it works
+
+```mermaid
+flowchart TD
+    U[User: goal, files, and knowledge base] --> W[Next.js workbench]
+    W --> I[API ingress gateway]
+    subgraph Internal[Internal application networks]
+        I --> A[FastAPI task runtime]
+        A --> E[Local extraction and OCR]
+        E --> K[Knowledge retrieval]
+        K <--> Q[(Qdrant)]
+        A --> R[Capability and health based routing]
+        R --> G[Restricted Ollama gateway]
+        A --> T[Tool policy gateway]
+        T --> V[Artifact validation]
+        A <--> P[(PostgreSQL: tasks and audit)]
+        A <--> F[Local file and artifact storage]
+    end
+    G --> O[Native Ollama: text, code, vision, embeddings]
+    T --> S[Sandbox controller]
+    S --> C[Ephemeral code container: network disabled]
+    C --> V
+    V --> D[DOCX, XLSX, patch, and execution evidence]
+    D --> H[Human review]
+```
+
+The API worker uses internal Docker networks. Separate ingress and Ollama gateways handle browser/API access and local model requests. The sandbox controller is a distinct service with Docker-daemon access; the API worker does not mount the Docker socket.
+
+| Layer | Current implementation |
 |---|---|
-| Web application | Next.js, React, TypeScript |
-| API | FastAPI, Pydantic, SQLAlchemy |
-| Relational data | PostgreSQL 16 |
-| Vector search | Qdrant |
-| Local models | Ollama |
-| Extraction and OCR | PyMuPDF, Tesseract |
-| Orchestration | Turborepo, npm workspaces, `uv` |
-| Code isolation | Dedicated sandbox controller and ephemeral Docker containers |
-| Deployment | Docker Compose |
+| Interface | Next.js, React, TypeScript; Workbench, Knowledge, Models, Trace, and Security screens |
+| API and orchestration | Python 3.12, FastAPI, Pydantic, SQLAlchemy; persisted task runtime and controlled tool registry |
+| Local models | Ollama: `qwen3:1.7b`, `qwen2.5-coder:1.5b`, `gemma3:4b`, `nomic-embed-text` |
+| Knowledge and storage | PostgreSQL 16, Qdrant, local file storage |
+| Documents and artifacts | PyMuPDF, Tesseract, python-docx, openpyxl |
+| Deployment and isolation | Docker Compose, dedicated sandbox controller, ephemeral code containers |
 
-## Quick start
+## Implementation status
 
-### Prerequisites
+| Available in the repository | Where to inspect |
+|---|---|
+| Local accounts, organization-scoped access, and session authentication | [Authentication service](backend/app/services/auth.py) · [Tests](backend/tests/test_auth.py) |
+| Upload validation, PDF/OCR extraction, and versioned knowledge ingestion | [Extraction](backend/app/services/document_extraction.py) · [Ingestion](backend/app/services/knowledge_ingestion.py) |
+| Deterministic model routing and governed task execution | [Router](backend/app/routing/router.py) · [Runtime](backend/app/tasks/runtime.py) · [Tool registry](backend/app/tools/registry.py) |
+| Image/scan evidence with OCR and local vision processing | [Multimodal service](backend/app/services/multimodal.py) · [Tests](backend/tests/test_multimodal.py) |
+| DOCX, procurement XLSX, and coding artifact pipelines | [Artifact implementations](backend/app/artifacts) · [Procurement tests](backend/tests/test_procurement.py) |
+| Network-disabled code execution and checks | [Sandbox controller](sandbox-runner) · [Coding tests](backend/tests/test_coding.py) |
+| Security dashboard, audit events, and API egress probe | [Security routes](backend/app/api/routes/security.py) · [Tests](backend/tests/test_security.py) |
 
-- macOS with Apple Silicon for the currently verified profile
-- Docker Desktop or Colima with Docker Compose
-- Node.js 22.13 or newer
-- [`uv`](https://docs.astral.sh/uv/)
-- [Ollama](https://ollama.com/) running natively for Metal acceleration
+Experimental constrained ReAct paths exist, but their coding, document, and multimodal feature flags are **off by default** in [.env.example](.env.example). The default workflows use the governed runtime; enabling experimental paths requires separate evaluation.
 
-### Install and run
+## Security and sovereignty
+
+| Boundary | Implemented control | Scope and limitation |
+|---|---|---|
+| Model inference | Local Ollama adapter; `make ollama-serve` sets `OLLAMA_NO_CLOUD=1` | Initial dependency, image, and model downloads require connectivity |
+| API worker | Internal Compose networks; restricted local-model gateway | The host and gateway/control-plane services are separate boundaries |
+| Outbound evidence | API connection probe with timestamp and persisted result | A blocked probe is supporting evidence, not comprehensive zero-egress proof |
+| Generated code | Non-root ephemeral containers, disabled networking, fixed commands, bounded resources | Sandbox controller has privileged Docker-daemon access |
+| Data services | PostgreSQL on an internal network; Qdrant on the internal network plus a localhost-only port | Qdrant publishes `127.0.0.1:6333` in the current development configuration |
+| Artifacts and access | Organization-scoped APIs, validation, checksums, and audit records | Successful checks do not establish complete semantic correctness |
+
+See [docker-compose.yml](docker-compose.yml), the [Ollama gateway](backend/app/ollama_gateway.py), and [security tests](backend/tests/test_security.py) for implementation details. Enterprise deployment still requires hardened host isolation, credential management, and operational review.
+
+## Run locally
+
+The provided launch profile targets macOS/Apple Silicon with native Ollama. Defaults limit model concurrency to one request and one loaded model to accommodate constrained hardware; this is not a guaranteed memory or latency benchmark.
+
+**Prerequisites:** Node.js 22.13+, npm, Python 3.12, `uv`, Docker Desktop or Colima with Docker Compose, and Ollama. Complete dependency and model downloads before attempting an offline demonstration.
 
 ```bash
-git clone <repository-url> sovereign-ai
-cd sovereign-ai
-
+git clone https://github.com/soumanpaul/SovereignForgeAI.git
+cd SovereignForgeAI
 make doctor
 make setup
 ```
 
-Start the restricted Ollama service in terminal 1:
+In terminal 1, start Ollama with the provided local-runtime settings. If Ollama is already serving, stop that instance before starting this one:
 
 ```bash
 make ollama-serve
 ```
 
-Download the configured models once, then launch the application from terminal 2:
+In terminal 2, download the models and start the application:
 
 ```bash
 make ollama-models
@@ -126,149 +164,76 @@ make up
 make status
 ```
 
-Open the following local endpoints:
+Open **http://localhost:3000/signup** to create a local account, then use:
 
-| Service | URL |
+| Screen | Local URL |
 |---|---|
-| Web application | <http://localhost:3000> |
-| Knowledge workflow | <http://localhost:3000/knowledge> |
-| Agent workbench | <http://localhost:3000/workbench> |
-| Execution trace | <http://localhost:3000/trace> |
-| FastAPI documentation | <http://localhost:8000/docs> |
-| Readiness endpoint | <http://localhost:8000/api/v1/readiness> |
+| Workbench | http://localhost:3000/workbench |
+| Knowledge | http://localhost:3000/knowledge |
+| Execution trace | http://localhost:3000/trace |
+| Security and sovereignty | http://localhost:3000/security |
+| Interactive API documentation | http://localhost:8000/docs |
 
-For full setup, migration, shutdown, and troubleshooting guidance, use the [Setup and Run Guide](docs/19-setup-and-run-guide.md).
-
-### Frontend development with hot reload
-
-Run the infrastructure and API in Docker while Next.js runs locally with Fast Refresh:
+`make setup` creates `.env` from the example if needed. Compose uses `.env.example` as its API environment file by default; set `ENV_FILE=.env` when launching if you want API settings from your edited `.env`:
 
 ```bash
-make dev
+ENV_FILE=.env make up
 ```
 
-Keep the command running while editing files under `frontend/`. Press `Ctrl-C` to stop Next.js, then run `make down` when you also want to stop the supporting Docker services. Use `make up` for the production-style, fully containerized stack; frontend source changes require an image rebuild in that mode.
+For frontend hot reload, use `make dev`. To stop the Compose stack without deleting its data volumes, use `make down`. The [Makefile](Makefile) contains the launch and maintenance commands.
 
-## Try the grounded-knowledge demo
+## Reproduce the demonstration
 
-1. Open <http://localhost:3000/knowledge>.
-2. Upload [`demo-data/pump-maintenance-sop.md`](demo-data/pump-maintenance-sop.md).
-3. Add the document to a knowledge base and wait for indexing to complete.
-4. Search for:
+1. Create a local account and open **Knowledge**. Upload and index the [pump maintenance SOP](demo/presentation-v1/01-inspection/aegis-pump-maintenance-sop.pdf).
+2. In **Workbench**, select the knowledge base, attach the [inspection report](demo/presentation-v1/01-inspection/aegis-p101-inspection-report.pdf) and [image](demo/presentation-v1/01-inspection/aegis-p101-seal-leak.jpg), then use the [inspection prompt](demo/presentation-v1/01-inspection/prompt.txt).
+3. Inspect the execution trace and download the resulting DOCX.
+4. Run the [coding prompt](demo/presentation-v1/02-coding/prompt.txt) with the [repository ZIP](demo/presentation-v1/02-coding/p101-temperature-monitor.zip).
+5. Run the [procurement prompt](demo/presentation-v1/03-procurement/prompt.txt) with the [quotations](demo/presentation-v1/03-procurement/mechanical-seal-quotations.csv) and [policy](demo/presentation-v1/03-procurement/aegis-procurement-policy.pdf). Inspect both the XLSX and DOCX.
 
-```text
-How do I safely isolate pump P-101 before maintenance?
+The [dataset manifest](demo/presentation-v1/manifest.json) identifies the fixtures. Expected-result JSON files provide scenario ground truth.
+
+For an automated live run, use the [acceptance runner](demo/presentation-v1/run_acceptance.py) with a dedicated local demo account:
+
+```bash
+PRESENTATION_DEMO_EMAIL='presentation-v1@sovereignforge.local' \
+PRESENTATION_DEMO_PASSWORD='<your-local-demo-password>' \
+backend/.venv/bin/python demo/presentation-v1/run_acceptance.py
 ```
 
-The result should return relevant SOP evidence and cite `pump-maintenance-sop.md · p. 1`.
+This command creates application demo data and writes downloaded artifacts and results into the demo output directory. The runner checks model readiness, workflow completion, artifact validation/checksums, and selected office-content requirements. Inspect its assertions for the exact acceptance scope.
 
-## Validation
-
-Run the full repository quality gate and production build:
+## Development checks
 
 ```bash
 make check
 npm run build
 ```
 
-Check the running services:
+These commands run the configured lint, type, test, and build checks. Live acceptance above additionally requires running services and downloaded models; unit tests alone do not establish real-model quality.
 
-```bash
-curl http://localhost:8000/api/v1/health
-curl http://localhost:8000/api/v1/readiness
-```
+## Next milestones
 
-The recorded workflow builds include end-to-end local acceptance evidence for the safe-coding and procurement paths. See the [Day 4 Build Record](docs/24-day-4-build-record.md) and [Day 5 Build Record](docs/25-day-5-build-record.md).
+- Publish repeatable latency, peak-memory, and task-success measurements across a larger corpus.
+- Expand evaluation for poor scans, conflicting sources, prompt injection, and unsupported requests.
+- Extend network evidence beyond the current API probe and code-container boundary.
+- Add enterprise identity integration and harden sandbox-controller deployment.
+- Conduct a supervised departmental pilot and measure time saved including human review.
 
-## API overview
+The current deliverable is a competition prototype with inspectable workflow evidence. Enterprise readiness and broad task accuracy remain work to validate.
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `GET` | `/api/v1/health` | API liveness |
-| `GET` | `/api/v1/readiness` | PostgreSQL, Qdrant, and Ollama readiness |
-| `GET` | `/api/v1/models` | List registered local models |
-| `PATCH` | `/api/v1/models/{model_id}` | Owner-only enable or disable model routing |
-| `POST` | `/api/v1/models/{model_id}/health-check` | Refresh model health |
-| `POST` | `/api/v1/inference/chat` | Temporary foundation inference endpoint |
-| `GET/POST` | `/api/v1/workspaces` | List or create workspaces |
-| `GET/POST` | `/api/v1/workspaces/{id}/files` | List or securely upload files |
-| `GET/POST` | `/api/v1/knowledge-bases` | List or create knowledge bases |
-| `POST` | `/api/v1/knowledge-bases/{id}/ingestions` | Start staged versioned ingestion |
-| `GET` | `/api/v1/ingestions/{id}` | Poll ingestion status |
-| `POST` | `/api/v1/knowledge-bases/{id}/search` | Retrieve cited semantic matches |
-| `GET/POST` | `/api/v1/tasks` | List or create governed document/coding tasks |
-| `GET` | `/api/v1/tasks/{id}` | Read durable task, steps, result, and artifacts |
-| `GET` | `/api/v1/artifacts/{id}/content` | Download an authorized immutable artifact |
-
-The direct inference route remains a foundation/debug endpoint; user workflows use governed task APIs and deterministic model selection.
-
-## Security and data-sovereignty posture
-
-Implemented today:
-
-- no cloud model provider is configured;
-- Ollama is started with cloud features disabled by the provided Make target;
-- PostgreSQL and Qdrant have no host-published ports and use a private Compose network;
-- uploads use opaque server-generated storage keys and path-containment checks;
-- PDF/image signatures, extensions, and upload size are validated;
-- embeddings and inference are performed by local Ollama models;
-- knowledge indexes activate a new version only after successful ingestion.
-- generated code runs in an ephemeral non-root container with network disabled, a read-only repository, fixed commands, and bounded CPU, memory, PIDs, time, and output;
-- the API has no Docker socket; an internal sandbox controller owns the privileged daemon boundary;
-- source uploads remain immutable and code artifacts publish only after fixed verification passes.
-
-Known boundary: the Day 4 proof covers generated-code containers, not every host process or Docker control-plane action. The Docker controller is a privileged prototype boundary that needs dedicated-host or micro-VM isolation for production. See [Security and Sovereignty](docs/08-security-and-sovereignty.md).
-
-## Repository layout
+## Repository map
 
 ```text
-.
-├── frontend/          Next.js application and frontend tests
-├── backend/           FastAPI API, services, migrations, and tests
-├── sandbox-image/     constrained generated-code runtime
-├── sandbox-runner/    internal ephemeral-container controller
-├── demo/              deterministic workflow fixtures
-├── demo-data/         Deterministic local demonstration inputs
-├── docs/              Product, architecture, security, and delivery source of truth
-├── docker-compose.yml Local application and data-service topology
-├── Makefile           Setup, model, runtime, and verification commands
-└── package.json       Turborepo workspace orchestration
+frontend/              Workbench and supporting Next.js screens
+backend/               API, routing, tools, artifacts, migrations, tests
+sandbox-image/         Generated-code execution image
+sandbox-runner/        Ephemeral-container controller
+demo/presentation-v1/  Synthetic inputs, expected results, recorded outputs
+docs/assets/           Project artwork
+Makefile               Setup, runtime, and verification commands
+docker-compose.yml     Application network and service configuration
 ```
 
-## Documentation
+**Built by Team BOMBE for SIH26117:** Sovereign On-Premise Agentic AI Workbench using Open-Weight Multimodal LLMs for Confidential Industrial Work.
 
-Start with the [Engineering Plan](docs/README.md), which indexes the complete specification set. Key references:
-
-- [Product Charter](docs/01-product-charter.md)
-- [Requirements and Acceptance Criteria](docs/02-requirements.md)
-- [Features and Workflows](docs/03-features-and-workflows.md)
-- [Software Architecture](docs/04-architecture.md)
-- [Security and Sovereignty](docs/08-security-and-sovereignty.md)
-- [Testing and Evaluation](docs/09-testing-and-evaluation.md)
-- [Delivery Plan](docs/10-delivery-plan.md)
-- [Proposed Solution](docs/18-proposed-solution.md)
-- [Setup and Run Guide](docs/19-setup-and-run-guide.md)
-
-## Roadmap
-
-- **Day 1 — complete:** monorepo foundation, local model provider, registry, health, UI, and private data services.
-- **Day 2 — complete:** secure ingestion, PDF/OCR extraction, versioned Qdrant indexing, and cited retrieval.
-- **Day 3 — complete:** durable task state, deterministic routing, governed agent loop, hybrid evidence, DOCX, and trace events.
-- **Day 4 — complete:** coding route, secure repository intake, network-disabled sandbox verification, retries, and code artifacts.
-- **Day 5 — complete:** multimodal evidence normalization, procurement comparison, and validated DOCX/XLSX artifacts.
-- **Day 6:** audit, sovereignty evidence, and negative security tests.
-- **Day 7:** evaluation, offline rehearsal, packaging, and submission evidence.
-
-## Contributing
-
-Changes should preserve the documented trust boundaries and remain tied to requirements and acceptance evidence.
-
-1. Read the [engineering standards](docs/15-technology-and-engineering-standards.md).
-2. Create a focused branch and keep changes scoped.
-3. Add or update tests for behavior changes.
-4. Run `make check` and `npm run build`.
-5. Update the affected design document, ADR, and traceability entries for material architecture or security changes.
-
-## License
-
-No license file is currently included. Treat the repository as all-rights-reserved until the project owners add an explicit license.
+No license file is included; the repository does not currently grant an open-source license.
